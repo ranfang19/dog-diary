@@ -4,11 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>记录狗狗的每一天</title>
-    <!-- 引入 SortableJS 库以支持拖拽 -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <!-- 引入 Croppie 以支持头像裁切 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js"></script>
     <style>
         :root {
             --bg-color: #FDFBF7;
@@ -24,157 +20,56 @@
             --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.04);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Helvetica Neue", Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Helvetica Neue", Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 100px; max-width: 600px; margin: 0 auto; min-height: 100vh; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            padding-bottom: 100px;
-            max-width: 600px;
-            margin: 0 auto;
-            min-height: 100vh;
-        }
-
-        /* 头部放大 */
-        .header { padding: 36px 24px 16px; }
-        .header-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        .user-profile { display: flex; align-items: center; gap: 16px; }
+        #syncStatus { position: absolute; right: 24px; top: 24px; font-size: 12px; color: var(--text-muted); font-weight: 500; transition: opacity 0.3s; opacity: 0; }
+        .header { padding: 40px 24px 16px; position: relative; }
+        .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .user-profile { display: flex; align-items: center; gap: 16px; width: 100%; }
         
         .avatar-container { position: relative; cursor: pointer; flex-shrink: 0; }
-        .avatar {
-            width: 72px; height: 72px;
-            background: #EFEFEF; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 36px; overflow: hidden; object-fit: cover;
-        }
+        .avatar { width: 72px; height: 72px; background: #EFEFEF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; overflow: hidden; object-fit: cover; }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .avatar-hint {
-            position: absolute; bottom: -2px; right: -2px;
-            background: var(--text-main); color: #fff;
-            border-radius: 50%; width: 22px; height: 22px;
-            font-size: 10px; display: flex; align-items: center; justify-content: center;
-            border: 2px solid var(--bg-color);
-        }
+        .avatar-hint { position: absolute; bottom: -2px; right: -2px; background: var(--text-main); color: #fff; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-color); }
 
-        .greeting-text { display: flex; flex-direction: column; }
-        .greeting { font-size: 16px; font-weight: 400; color: var(--text-muted); margin-bottom: 2px; }
+        .greeting-text { display: flex; flex-direction: column; overflow: hidden; flex: 1; }
+        .greeting { font-size: 14px; font-weight: 500; color: var(--text-muted); margin-bottom: 4px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         
-        .name-wrapper {
-            display: flex; align-items: center; 
-        }
-        .pet-name-input {
-            background: transparent; border: none; color: var(--text-main);
-            font-size: 22px; font-weight: 700; outline: none; width: 140px;
-            border-bottom: 1px dashed transparent; transition: border-color 0.2s;
-        }
-        .pet-name-input:focus, .pet-name-input:hover {
-            border-bottom-color: var(--text-muted);
-        }
+        .name-wrapper { display: flex; align-items: center; }
+        .pet-name-input { background: transparent; border: none; color: var(--text-main); font-size: 22px; font-weight: 700; outline: none; width: 140px; border-bottom: 1px dashed transparent; transition: border-color 0.2s; }
+        .pet-name-input:focus, .pet-name-input:hover { border-bottom-color: var(--text-muted); }
 
-        /* 身体数据栏 - 强制一行显示 */
-        .body-stats-wrapper {
-            display: flex; gap: 6px; font-size: 11px; color: var(--text-muted);
-            margin-top: 4px; cursor: pointer; border-bottom: 1px dashed transparent;
-            transition: border-color 0.2s; padding-bottom: 2px; width: 100%;
-            white-space: nowrap; flex-wrap: nowrap; overflow: hidden;
-            align-items: center;
-        }
-        .body-stats-wrapper:hover {
-            border-bottom-color: var(--text-muted);
-        }
+        .body-stats-wrapper { display: flex; gap: 6px; font-size: 11px; color: var(--text-muted); margin-top: 4px; cursor: pointer; border-bottom: 1px dashed transparent; transition: border-color 0.2s; padding-bottom: 2px; width: 100%; white-space: nowrap; flex-wrap: nowrap; overflow: hidden; align-items: center; }
+        .body-stats-wrapper:hover { border-bottom-color: var(--text-muted); }
         .body-stats-wrapper span { display: inline-block; white-space: nowrap; }
         .body-stats-wrapper b { color: var(--text-main); font-weight: 600; }
 
-        .slogan-input {
-            width: 100%; background: transparent; border: none;
-            font-size: 28px; font-weight: 700; color: var(--text-main);
-            margin-bottom: 16px; outline: none;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            border-bottom: 1px dashed transparent; transition: border-color 0.2s;
-        }
-        .slogan-input:focus, .slogan-input:hover {
-            border-bottom-color: var(--text-muted);
-        }
+        .slogan-input { width: 100%; background: transparent; border: none; font-size: 28px; font-weight: 700; color: var(--text-main); margin-bottom: 16px; outline: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px dashed transparent; transition: border-color 0.2s; }
+        .slogan-input:focus, .slogan-input:hover { border-bottom-color: var(--text-muted); }
 
-        /* 筛选区 */
-        .filter-section {
-            padding: 0 24px 16px; display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none;
-        }
+        .filter-section { padding: 0 24px 16px; display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
         .filter-section::-webkit-scrollbar { display: none; }
-        .filter-tag {
-            padding: 8px 16px; background: var(--tag-bg); border-radius: var(--radius-pill);
-            font-size: 14px; font-weight: 500; white-space: nowrap; color: var(--text-muted);
-            cursor: pointer; transition: all 0.2s; border: none; display: flex; align-items: center; justify-content: center;
-        }
-        .filter-tag.active { background: var(--accent-yellow); color: var(--text-main); font-weight: 600; }
+        .filter-tag { padding: 8px 16px; background: var(--tag-bg); border-radius: var(--radius-pill); font-size: 14px; font-weight: 500; white-space: nowrap; color: var(--text-muted); cursor: pointer; transition: all 0.2s; border: none; display: flex; align-items: center; justify-content: center; }
         
-        /* 列表顶部区域 (包含日期筛选) */
-        .list-header-bar {
-            padding: 10px 24px 0; display: flex; align-items: center; justify-content: space-between;
-        }
-        .list-header-title {
-            font-size: 18px; font-weight: 700; color: var(--text-main);
-        }
+        .list-header-bar { padding: 10px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+        .list-header-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
         
-        /* 定制日历筛选器 */
-        .date-filter-wrapper {
-            position: relative; display: flex; align-items: center; background: var(--tag-bg); 
-            border-radius: 12px; padding: 6px 12px; overflow: hidden;
-        }
-        .date-filter-icon {
-            font-size: 18px; pointer-events: none;
-        }
-        .date-filter-input {
-            position: absolute; left: 0; top: 0; width: 100%; height: 100%; 
-            opacity: 0; cursor: pointer; z-index: 1;
-        }
-        .date-clear-btn {
-            background: none; border: none; color: var(--text-muted); 
-            font-size: 14px; cursor: pointer; display: none; 
-            padding-left: 8px; border-left: 1px solid #D1D1D6; margin-left: 8px; 
-            position: relative; z-index: 2; font-weight: bold;
-        }
+        .date-filter-wrapper { position: relative; display: flex; align-items: center; background: var(--tag-bg); border-radius: 12px; padding: 6px 12px; overflow: hidden; }
+        .date-filter-icon { font-size: 18px; pointer-events: none; }
+        .date-filter-input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 1; }
+        .date-clear-btn { background: none; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; display: none; padding-left: 8px; border-left: 1px solid #D1D1D6; margin-left: 8px; position: relative; z-index: 2; font-weight: bold; }
 
-        /* 列表 */
         .container { padding: 4px 24px 10px; }
         .month-group { margin-bottom: 20px; }
-        .month-header {
-            font-size: 15px; font-weight: 600; color: var(--text-muted);
-            margin: 16px 0 12px; display: flex; align-items: center; justify-content: space-between;
-        }
+        .month-header { font-size: 15px; font-weight: 600; color: var(--text-muted); margin: 16px 0 12px; display: flex; align-items: center; justify-content: space-between; }
         .month-count { font-size: 12px; font-weight: normal; }
 
-        .record-card {
-            background: var(--card-bg); border-radius: var(--radius-xl); padding: 16px 20px;
-            margin-bottom: 16px; box-shadow: var(--shadow-soft); display: flex; gap: 16px; align-items: flex-start;
-            transition: transform 0.2s; /* 拖拽时的动画 */
-            position: relative;
-        }
-        /* 拖拽状态的样式 */
-        .sortable-ghost {
-            opacity: 0.4;
-        }
-        .sortable-drag {
-            transform: scale(1.02);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-            z-index: 10;
-        }
+        .record-card { background: var(--card-bg); border-radius: var(--radius-xl); padding: 16px 20px; margin-bottom: 16px; box-shadow: var(--shadow-soft); display: flex; gap: 16px; align-items: flex-start; transition: transform 0.2s, background-color 0.5s; position: relative; }
+        .sortable-ghost { opacity: 0.4; }
+        .sortable-drag { transform: scale(1.02); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1); z-index: 10; }
         
-        .record-icon {
-            width: 48px; height: 48px; border-radius: var(--radius-lg);
-            display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
-        }
+        .record-icon { width: 48px; height: 48px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
         .record-content { flex: 1; min-width: 0; }
         .record-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .record-title { font-weight: 600; font-size: 16px; color: var(--text-main); }
@@ -183,38 +78,15 @@
         .record-actions { margin-top: 10px; display: flex; gap: 16px; justify-content: flex-end; }
         .action-btn { background: none; border: none; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
         
-        /* 拖拽手柄指示器 */
-        .drag-handle {
-            display: none; 
-            position: absolute; right: 16px; top: 16px;
-            color: #C7C7CC; cursor: grab; font-size: 16px;
-        }
+        .drag-handle { display: none; position: absolute; right: 16px; top: 16px; color: #C7C7CC; cursor: grab; font-size: 16px; }
         .record-card:hover .drag-handle { display: block; }
 
-        /* FAB悬浮按钮 */
-        .fab-container {
-            position: fixed; bottom: 30px; left: 0; right: 0;
-            display: flex; justify-content: center; pointer-events: none; z-index: 99;
-        }
-        .fab {
-            width: 60px; height: 60px; background: var(--text-main); color: #FFF;
-            border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); cursor: pointer; pointer-events: auto;
-        }
+        .fab-container { position: fixed; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; z-index: 99; }
+        .fab { width: 60px; height: 60px; background: var(--text-main); color: #FFF; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); cursor: pointer; pointer-events: auto; }
 
-        /* Modal通用 */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
-            display: none; align-items: flex-end; justify-content: center; z-index: 1000;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); display: none; align-items: flex-end; justify-content: center; z-index: 1000; }
         .modal-overlay.active { display: flex; }
-        .modal-card {
-            background: var(--bg-color); width: 100%; max-width: 600px;
-            border-radius: 24px 24px 0 0; padding: 24px 24px 40px;
-            max-height: 90vh; overflow-y: auto;
-            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+        .modal-card { background: var(--bg-color); width: 100%; max-width: 600px; border-radius: 24px 24px 0 0; padding: 24px 24px 40px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-title { font-size: 18px; font-weight: 600; }
@@ -222,67 +94,51 @@
         
         .form-group { margin-bottom: 20px; }
         .form-label { display: block; font-size: 14px; font-weight: 500; color: var(--text-muted); margin-bottom: 10px; }
-        .form-input, .form-textarea {
-            width: 100%; padding: 14px; background: var(--card-bg); color: var(--text-main);
-            border: none; border-radius: 12px; font-size: 15px; outline: none;
-        }
+        .form-input, .form-textarea { width: 100%; padding: 14px; background: var(--card-bg); color: var(--text-main); border: none; border-radius: 12px; font-size: 15px; outline: none; }
+        .form-input::placeholder, .form-textarea::placeholder { color: #C7C7CC; }
         .form-textarea { height: 90px; resize: none; }
-        .btn-submit {
-            width: 100%; background: var(--text-main); color: #FFF; padding: 16px;
-            border: none; border-radius: var(--radius-pill); font-size: 16px; font-weight: 600; cursor: pointer;
-        }
+        .btn-submit { width: 100%; padding: 16px; border: none; border-radius: var(--radius-pill); font-size: 16px; font-weight: 600; transition: background 0.3s; }
 
-        /* 分类选择网格 */
+        @keyframes flashHighlight { 0% { background-color: #FFD479; } 100% { background-color: var(--card-bg); } }
+        .highlight-stat, .highlight-record { animation: flashHighlight 2s ease-out; }
+
         .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .category-item {
-            background: var(--card-bg); padding: 12px; border-radius: var(--radius-lg); text-align: center;
-            font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer;
-            display: flex; flex-direction: column; align-items: center; gap: 6px; border: 2px solid transparent;
-        }
+        .category-item { background: var(--card-bg); padding: 12px; border-radius: var(--radius-lg); text-align: center; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 2px solid transparent; }
         .category-item.selected { border-color: var(--accent-yellow); color: var(--text-main); }
         .category-item span:first-child { font-size: 24px; }
 
-        /* 列表容器 */
         .tag-manage-list { display: flex; flex-direction: column; gap: 10px; }
-        .tag-manage-item {
-            display: flex; align-items: center; justify-content: space-between; background: var(--card-bg);
-            padding: 12px 16px; border-radius: 12px;
-        }
+        .tag-manage-item { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 12px 16px; border-radius: 12px; }
         .tag-manage-info { display: flex; align-items: center; gap: 12px; font-weight: 500; }
         .tag-manage-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;}
         .tag-manage-actions { display: flex; gap: 8px; }
         .icon-btn { background: var(--tag-bg); border: none; width: 30px; height: 30px; border-radius: 8px; color: var(--text-main); cursor: pointer; }
 
-        /* 颜色选择器 */
         .color-picker { display: flex; gap: 10px; flex-wrap: wrap; }
-        .color-swatch {
-            width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
-            border: 2px solid transparent; transition: all 0.2s;
-        }
+        .color-swatch { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
         .color-swatch.selected { border-color: var(--text-main); transform: scale(1.1); }
 
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
-        .data-tools { text-align: center; margin-top: 30px; font-size: 12px; color: #C7C7CC; }
+        .data-tools { text-align: center; margin-top: 30px; font-size: 13px; color: #C7C7CC; font-weight: 500;}
+        .data-tools span:hover { color: var(--text-main); }
     </style>
 </head>
 <body>
 
     <div class="header">
+        <div id="syncStatus"></div>
         <div class="header-top">
             <div class="user-profile">
-                <!-- 头像上传 -->
                 <label class="avatar-container" title="点击修改头像">
                     <div class="avatar" id="avatarPreview">🐶</div>
                     <div class="avatar-hint">📷</div>
                     <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
                 </label>
                 <div class="greeting-text">
-                    <span class="greeting" id="greetingMsg">Good morning ☀️</span>
-                    <!-- 狗狗名字修改 -->
+                    <span class="greeting" id="greetingMsg">Good morning</span>
                     <div class="name-wrapper">
                         <input type="text" id="petName" class="pet-name-input" value="Emma" onblur="saveSettings()" placeholder="输入名字" title="点击修改名字">
                     </div>
-                    <!-- 身体数据修改 -->
                     <div class="body-stats-wrapper" onclick="openStatsModal()" title="点击修改身体数据">
                         <span>体重: <b id="displayWeight">--</b> kg</span>
                         <span>胸围: <b id="displayChest">--</b> cm</span>
@@ -292,16 +148,11 @@
                 </div>
             </div>
         </div>
-        <!-- 标语修改 -->
         <input type="text" id="slogan" class="slogan-input" value="记录狗狗的每一天" maxlength="15" onblur="saveSettings()" placeholder="一句话记录" title="点击修改标语">
     </div>
 
-    <!-- 动态分类标签 -->
-    <div class="filter-section" id="filterTagsContainer">
-        <!-- JS 渲染 -->
-    </div>
+    <div class="filter-section" id="filterTagsContainer"></div>
 
-    <!-- 列表顶部栏：所有记录 + 时间筛选 (按月) -->
     <div class="list-header-bar" id="listHeaderBar">
         <div class="list-header-title" id="listTitle">所有记录</div>
         <div class="date-filter-wrapper" id="dateFilterWrapper" title="筛选月份">
@@ -322,7 +173,7 @@
         <div class="modal-card">
             <div class="modal-header">
                 <div class="modal-title" id="recordModalTitle">新增记录</div>
-                <button class="modal-close" onclick="closeModal('recordModal')">✕</button>
+                <button class="modal-close" onclick="closeModal('recordModal')" type="button">✕</button>
             </div>
             <form id="recordForm" onsubmit="handleRecordSubmit(event)">
                 <input type="hidden" id="recordId">
@@ -345,10 +196,9 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">详情</label>
-                    <!-- 移除了 required 属性，现在详情描述可以为空 -->
                     <textarea id="recordDetail" class="form-textarea" placeholder="写下今天发生的事情..."></textarea>
                 </div>
-                <button type="submit" class="btn-submit">保存记录</button>
+                <button type="submit" class="btn-submit" style="background:var(--text-main); color:#FFF; cursor:pointer;">保存记录</button>
             </form>
         </div>
     </div>
@@ -358,33 +208,33 @@
         <div class="modal-card">
             <div class="modal-header">
                 <div class="modal-title">身体数据记录</div>
-                <button class="modal-close" onclick="closeModal('statsModal')">✕</button>
+                <button class="modal-close" onclick="closeModal('statsModal')" type="button">✕</button>
             </div>
             <form id="statsForm" onsubmit="handleStatsSubmit(event)">
                 <input type="hidden" id="statId">
                 <div class="category-grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label">体重(kg)</label>
-                        <input type="number" step="0.1" id="statInputWeight" class="form-input">
+                        <input type="number" step="0.1" id="statInputWeight" class="form-input" oninput="checkStatsInputs()">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label">胸围(cm)</label>
-                        <input type="number" step="0.1" id="statInputChest" class="form-input">
+                        <input type="number" step="0.1" id="statInputChest" class="form-input" oninput="checkStatsInputs()">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label">颈围(cm)</label>
-                        <input type="number" step="0.1" id="statInputNeck" class="form-input">
+                        <input type="number" step="0.1" id="statInputNeck" class="form-input" oninput="checkStatsInputs()">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label">身长(cm)</label>
-                        <input type="number" step="0.1" id="statInputLength" class="form-input">
+                        <input type="number" step="0.1" id="statInputLength" class="form-input" oninput="checkStatsInputs()">
                     </div>
                 </div>
                 <div class="form-group" style="margin-top:16px;">
                     <label class="form-label">测量日期</label>
                     <input type="date" id="statInputDate" class="form-input" required>
                 </div>
-                <button type="submit" class="btn-submit">保存数据</button>
+                <button type="submit" class="btn-submit" id="statsSubmitBtn">保存数据</button>
             </form>
             
             <div style="margin-top: 32px;">
@@ -399,10 +249,10 @@
         <div class="modal-card">
             <div class="modal-header">
                 <div class="modal-title">管理分类标签</div>
-                <button class="modal-close" onclick="closeModal('tagManagerModal'); renderApp();">✕</button>
+                <button class="modal-close" onclick="closeModal('tagManagerModal'); renderApp();" type="button">✕</button>
             </div>
             <div class="tag-manage-list" id="tagManageList"></div>
-            <button class="btn-submit" style="margin-top:20px; background:var(--tag-bg); color:var(--text-main);" onclick="openTagEditModal()">+ 添加新分类</button>
+            <button class="btn-submit" style="margin-top:20px; background:var(--tag-bg); color:var(--text-main); cursor:pointer;" onclick="openTagEditModal()" type="button">+ 添加新分类</button>
         </div>
     </div>
 
@@ -411,7 +261,7 @@
         <div class="modal-card">
             <div class="modal-header">
                 <div class="modal-title" id="tagEditTitle">添加分类</div>
-                <button class="modal-close" onclick="closeModal('tagEditModal')">✕</button>
+                <button class="modal-close" onclick="closeModal('tagEditModal')" type="button">✕</button>
             </div>
             <form id="tagForm" onsubmit="handleTagSubmit(event)">
                 <input type="hidden" id="tagEditId">
@@ -428,34 +278,65 @@
                     <div class="color-picker" id="colorPicker">
                         <div class="color-swatch" style="background:#FFE8E8" data-color="#FFE8E8"></div>
                         <div class="color-swatch" style="background:#E8F4FF" data-color="#E8F4FF"></div>
+                        <div class="color-swatch" style="background:#E0F7FA" data-color="#E0F7FA"></div>
                         <div class="color-swatch" style="background:#EAF6E3" data-color="#EAF6E3"></div>
                         <div class="color-swatch" style="background:#FFF4D4" data-color="#FFF4D4"></div>
                         <div class="color-swatch" style="background:#F3E8FF" data-color="#F3E8FF"></div>
                         <div class="color-swatch" style="background:#F2F2F7" data-color="#F2F2F7"></div>
                         <div class="color-swatch" style="background:#FFE0B2" data-color="#FFE0B2"></div>
-                        <div class="color-swatch" style="background:#D1C4E9" data-color="#D1C4E9"></div>
                     </div>
                 </div>
-                <button type="submit" class="btn-submit">保存标签</button>
+                <button type="submit" class="btn-submit" style="background:var(--text-main); color:#FFF; cursor:pointer;">保存标签</button>
             </form>
         </div>
     </div>
 
-    <!-- 头像裁切弹窗 -->
-    <div class="modal-overlay" id="cropModal" style="z-index: 2000;">
-        <div class="modal-card" style="display:flex; flex-direction:column; align-items:center;">
-            <div class="modal-header" style="width:100%">
-                <div class="modal-title">裁剪头像</div>
-                <button class="modal-close" onclick="closeModal('cropModal')">✕</button>
+    <!-- 云同步管理弹窗 -->
+    <div class="modal-overlay" id="syncModal" style="z-index: 1500;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">☁️ 家庭云同步配置</div>
+                <button class="modal-close" onclick="closeModal('syncModal')" type="button">✕</button>
             </div>
-            <div id="croppieContainer" style="width: 100%; height: 300px;"></div>
-            <button class="btn-submit" onclick="saveAvatarCrop()" style="margin-top:20px;">确认头像</button>
+            <div id="syncNotConnected">
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom: 20px; line-height: 1.5;">
+                    <b>方式一：加入已有家庭同步</b><br>
+                    如果家人已经创建好了，直接输入他分享给你的 6 位暗号即可。
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <input type="number" id="syncCodeInput" class="form-input" placeholder="输入 6 位数字暗号" style="flex:1">
+                    <button class="btn-submit" style="width:auto; padding: 14px 20px; background:var(--text-main); color:#fff; cursor:pointer;" onclick="joinSync()">加入</button>
+                </div>
+                <hr style="border:none; border-top:1px dashed #E5E5EA; margin: 24px 0;">
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom: 20px; line-height: 1.5;">
+                    <b>方式二：开启全新云同步</b><br>
+                    点击下方按钮，系统将自动把您本地的数据同步至云端，并生成家庭共享暗号。
+                </div>
+                <button class="btn-submit" style="background:var(--accent-yellow); color:var(--text-main); cursor:pointer;" onclick="createSync()">✨ 一键生成家庭共享暗号</button>
+            </div>
+
+            <div id="syncConnected" style="display: none;">
+                <div style="text-align:center; margin-bottom:24px;">
+                    <div style="font-size:40px; margin-bottom:10px;">✅</div>
+                    <div style="font-size:16px; font-weight:600;">已连接至家庭云端</div>
+                    <div style="font-size:13px; color:var(--text-muted); margin-top:6px;">日记数据将在你每次改动时自动实时同步</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="text-align:center;">你们的家庭共享暗号 (点击复制发给家人)</label>
+                    <input type="text" id="mySyncCode" class="form-input" readonly onclick="this.select(); document.execCommand('copy'); alert('共享暗号已复制！');" style="text-align:center; font-size:24px; font-weight:700; font-family:monospace; background: var(--tag-bg); color:var(--text-main); cursor:pointer; letter-spacing:2px;">
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn-submit" style="flex:1; background:var(--text-main); color:#FFF; cursor:pointer;" onclick="forcePullSync()">手动刷最新数据</button>
+                    <button class="btn-submit" style="flex:1; background:#FFE8E8; color:#FF5C5C; cursor:pointer;" onclick="disconnectSync()">断开云同步</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="data-tools">
-        <span onclick="exportData()" style="cursor:pointer">导出数据</span> | 
-        <span onclick="document.getElementById('importFileInput').click()" style="cursor:pointer">恢复数据</span>
+        <span onclick="openSyncModal()" style="cursor:pointer; color:var(--text-main); font-weight: 600;">☁️ 家庭云同步</span> | 
+        <span onclick="exportData()" style="cursor:pointer">导出备份</span> | 
+        <span onclick="document.getElementById('importFileInput').click()" style="cursor:pointer">恢复备份</span>
         <input type="file" id="importFileInput" style="display:none" accept=".json" onchange="handleFileImport(event)">
     </div>
 
@@ -465,7 +346,8 @@
             { id: 'c2', name: '出去玩', emoji: '🎾', color: '#FFF4D4' },
             { id: 'c3', name: '驱虫', emoji: '💊', color: '#EAF6E3' },
             { id: 'c4', name: '洗澡', emoji: '🛁', color: '#E8F4FF' },
-            { id: 'c5', name: '生病', emoji: '🏥', color: '#FFE8E8' }
+            { id: 'c5', name: '医院', emoji: '🏥', color: '#FFE8E8' },
+            { id: 'c6', name: '疫苗', emoji: '💉', color: '#E0F7FA' }
         ];
 
         let records = [];
@@ -475,7 +357,12 @@
         let selectedRecordCategory = '';
         let selectedTagColor = '#FFE8E8';
         let sortableInstances = [];
-        let croppieInstance = null;
+        let highlightedStatId = null;
+        let highlightedRecordId = null; 
+
+        // 云同步变量
+        let syncCode = localStorage.getItem('dog_sync_code') || '';
+        let syncTimer = null;
 
         function getTodayString() {
             const d = new Date();
@@ -485,28 +372,63 @@
             return `${year}-${month}-${day}`;
         }
 
-        // 初始化
-        window.onload = function() {
+        window.onload = async function() {
             setGreeting();
             loadSettings();
             
-            // 确保旧数据包含 order 字段
-            records.forEach((r, index) => {
-                if (r.order === undefined) {
-                    r.order = index; 
-                }
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.classList.remove('active');
+                    }
+                });
             });
-            saveRecords();
+            
+            records.forEach((r, index) => {
+                if (r.order === undefined) r.order = index; 
+            });
+            saveRecords(false);
             
             document.getElementById('dateFilter').value = '';
             
             renderApp();
             initColorPicker();
+
+            if (syncCode) {
+                await syncFromCloud();
+            }
         };
 
         function setGreeting() {
             const hour = new Date().getHours();
-            document.getElementById('greetingMsg').innerText = hour < 12 ? 'Good morning ☀️' : (hour < 18 ? 'Good afternoon ☕' : 'Good evening 🌙');
+            let greetings = [];
+            if (hour >= 5 && hour < 11) {
+                greetings = [
+                    "早上好，宝贝上一次洗澡是什么时候呀？ 🛁",
+                    "早安！今天也要带修狗出去玩哦 🎾",
+                    "早上好，新的一天从记录开始 ☀️"
+                ];
+            } else if (hour >= 11 && hour < 14) {
+                greetings = [
+                    "中午好！今天有没有按时吃午饭呀？ 🍖",
+                    "午安，狗狗今天乖不乖？ 🐶",
+                    "中午好，记得给狗狗加水哦 💧"
+                ];
+            } else if (hour >= 14 && hour < 18) {
+                greetings = [
+                    "下午好，宝贝昨天出去玩了吗？ 🐾",
+                    "下午好，有空陪狗狗玩一会吧 🎾",
+                    "下午好，今天的零食吃了吗？ 🦴"
+                ];
+            } else {
+                greetings = [
+                    "晚上好，宝贝今天吃了什么呀？ 🥩",
+                    "晚安，该给狗狗擦擦脚睡觉啦 🌙",
+                    "晚上好，别忘了记录今天的日常哦 📖"
+                ];
+            }
+            const text = greetings[Math.floor(Math.random() * greetings.length)];
+            document.getElementById('greetingMsg').innerText = text;
         }
 
         // --- 数据加载与保存 ---
@@ -515,10 +437,7 @@
             if (savedName) document.getElementById('petName').value = savedName;
             
             const savedSlogan = localStorage.getItem('dog_slogan');
-            if (savedSlogan) {
-                document.getElementById('slogan').value = savedSlogan;
-            }
-            
+            if (savedSlogan) document.getElementById('slogan').value = savedSlogan;
             document.title = document.getElementById('slogan').value.trim() || '狗狗日常记录';
 
             const savedAvatar = localStorage.getItem('dog_avatar');
@@ -527,89 +446,230 @@
             }
 
             const savedCategories = localStorage.getItem('dog_categories');
-            categories = savedCategories ? JSON.parse(savedCategories) : JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+            if (savedCategories) {
+                categories = JSON.parse(savedCategories);
+                let changed = false;
+                categories.forEach(c => {
+                    if (c.name === '生病') { c.name = '医院'; c.emoji = '🏥'; changed = true; }
+                });
+                if (!categories.some(c => c.name === '疫苗')) {
+                    const targetIdx = categories.findIndex(c => c.name === '医院');
+                    const newCat = { id: 'c6_' + Date.now(), name: '疫苗', emoji: '💉', color: '#E0F7FA' };
+                    if (targetIdx !== -1) categories.splice(targetIdx + 1, 0, newCat);
+                    else categories.push(newCat);
+                    changed = true;
+                }
+                if (changed) saveCategories(false);
+            } else {
+                categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+            }
 
             const savedRecords = localStorage.getItem('dog_records');
             records = savedRecords ? JSON.parse(savedRecords) : [];
             
             const savedBodyStats = localStorage.getItem('dog_body_stats');
             bodyStats = savedBodyStats ? JSON.parse(savedBodyStats) : [];
-            
             renderLatestBodyStats();
         }
 
-        function saveSettings() {
+        function saveSettings(triggerCloud = true) {
             const petName = document.getElementById('petName').value.trim();
             const slogan = document.getElementById('slogan').value.trim();
-            
             localStorage.setItem('dog_name', petName);
             localStorage.setItem('dog_slogan', slogan);
-            
             document.title = slogan || '狗狗日常记录';
+            if(triggerCloud) debounceSyncToCloud();
+        }
+        function saveCategories(triggerCloud = true) { localStorage.setItem('dog_categories', JSON.stringify(categories)); if(triggerCloud) debounceSyncToCloud(); }
+        function saveRecords(triggerCloud = true) { localStorage.setItem('dog_records', JSON.stringify(records)); if(triggerCloud) debounceSyncToCloud(); }
+        function saveBodyStats(triggerCloud = true) { localStorage.setItem('dog_body_stats', JSON.stringify(bodyStats)); if(triggerCloud) debounceSyncToCloud(); }
+
+        // --- 核心 Cloudflare Pages Functions 云同步逻辑 ---
+        function updateSyncStatus(msg) {
+            const el = document.getElementById('syncStatus');
+            el.innerText = msg;
+            el.style.opacity = '1';
+        }
+        function hideSyncStatus() {
+            setTimeout(() => { document.getElementById('syncStatus').style.opacity = '0'; }, 2000);
         }
 
-        function saveCategories() {
-            localStorage.setItem('dog_categories', JSON.stringify(categories));
+        function debounceSyncToCloud() {
+            if (!syncCode) return;
+            clearTimeout(syncTimer);
+            updateSyncStatus('正在同步至云端... ☁️');
+            syncTimer = setTimeout(async () => {
+                await pushToCloud();
+            }, 1200);
         }
 
-        function saveRecords() {
-            localStorage.setItem('dog_records', JSON.stringify(records));
-        }
-        
-        function saveBodyStats() {
-            localStorage.setItem('dog_body_stats', JSON.stringify(bodyStats));
+        async function pushToCloud() {
+            if (!syncCode) return;
+            try {
+                const dataToSync = {
+                    name: localStorage.getItem('dog_name') || 'Emma',
+                    slogan: localStorage.getItem('dog_slogan') || '记录狗狗的每一天',
+                    avatar: localStorage.getItem('dog_avatar') || '',
+                    categories: categories,
+                    records: records,
+                    bodyStats: bodyStats
+                };
+                
+                const response = await fetch(`/api/sync?code=${syncCode}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToSync)
+                });
+                
+                if (response.ok) {
+                    updateSyncStatus('云端同步更新 ☁️');
+                    hideSyncStatus();
+                } else {
+                    updateSyncStatus('同步失败，请检查网络 ⚠️');
+                }
+            } catch (err) {
+                updateSyncStatus('同步失败 ⚠️');
+            }
         }
 
-        // --- 头像裁切逻辑 ---
+        async function syncFromCloud() {
+            if (!syncCode) return;
+            updateSyncStatus('正在从云端拉取... ☁️');
+            try {
+                const response = await fetch(`/api/sync?code=${syncCode}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data) {
+                        if (data.name) { document.getElementById('petName').value = data.name; localStorage.setItem('dog_name', data.name); }
+                        if (data.slogan) { document.getElementById('slogan').value = data.slogan; localStorage.setItem('dog_slogan', data.slogan); document.title = data.slogan;}
+                        if (data.avatar) { document.getElementById('avatarPreview').innerHTML = `<img src="${data.avatar}" alt="avatar">`; localStorage.setItem('dog_avatar', data.avatar); }
+                        
+                        categories = data.categories || DEFAULT_CATEGORIES;
+                        records = data.records || [];
+                        bodyStats = data.bodyStats || [];
+                        
+                        saveCategories(false);
+                        saveRecords(false);
+                        saveBodyStats(false);
+                        
+                        renderApp();
+                        renderLatestBodyStats();
+                        updateSyncStatus('已同步最新 ☁️');
+                        hideSyncStatus();
+                    }
+                } else {
+                    updateSyncStatus('拉取数据失败 ⚠️');
+                }
+            } catch (err) {
+                updateSyncStatus('拉取数据失败 ⚠️');
+            }
+        }
+
+        function openSyncModal() {
+            document.getElementById('syncModal').classList.add('active');
+            if (syncCode) {
+                document.getElementById('syncNotConnected').style.display = 'none';
+                document.getElementById('syncConnected').style.display = 'block';
+                document.getElementById('mySyncCode').value = syncCode;
+            } else {
+                document.getElementById('syncNotConnected').style.display = 'block';
+                document.getElementById('syncConnected').style.display = 'none';
+            }
+        }
+
+        async function createSync() {
+            const btn = event.target;
+            btn.innerText = '生成中...';
+            btn.disabled = true;
+
+            const dataToSync = {
+                name: localStorage.getItem('dog_name') || 'Emma',
+                slogan: localStorage.getItem('dog_slogan') || '记录狗狗的每一天',
+                avatar: localStorage.getItem('dog_avatar') || '',
+                categories: categories,
+                records: records,
+                bodyStats: bodyStats
+            };
+
+            try {
+                const response = await fetch(`/api/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToSync)
+                });
+                
+                if (response.ok) {
+                    const res = await response.json();
+                    syncCode = res.shareCode;
+                    localStorage.setItem('dog_sync_code', syncCode);
+                    alert(`🎉 家庭云同步开启成功！\n\n你们的专属暗号是：${syncCode}`);
+                    openSyncModal();
+                } else {
+                    alert('生成共享码失败，请确保 Cloudflare 后台已绑定 KV 数据库 DOG_DIARY_KV');
+                }
+            } catch (e) {
+                alert('网络连接错误，请重试。');
+            }
+            btn.innerText = '✨ 一键生成家庭共享暗号';
+            btn.disabled = false;
+        }
+
+        async function joinSync() {
+            const code = document.getElementById('syncCodeInput').value.trim();
+            if (!code || code.length !== 6) return alert('请输入 6 位数字家庭暗号');
+            
+            syncCode = code;
+            localStorage.setItem('dog_sync_code', syncCode);
+            await syncFromCloud();
+            alert('成功加入家庭同步！数据已更新。');
+            openSyncModal();
+        }
+
+        async function forcePullSync() {
+            const btn = event.target;
+            btn.innerText = '拉取中...';
+            await syncFromCloud();
+            btn.innerText = '拉取完毕';
+            setTimeout(() => { btn.innerText = '手动刷最新数据'; }, 2000);
+        }
+
+        function disconnectSync() {
+            if (confirm('断开后，您新增的记录将只保存在本机，不再与家人共享。确定断开吗？')) {
+                syncCode = '';
+                localStorage.removeItem('dog_sync_code');
+                openSyncModal();
+            }
+        }
+
+        // --- 简单中心居中裁剪成正方形头像 ---
         function handleAvatarUpload(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    openCropModal(e.target.result);
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const size = Math.min(img.width, img.height);
+                        canvas.width = size;
+                        canvas.height = size;
+                        const ctx = canvas.getContext('2d');
+                        const startX = (img.width - size) / 2;
+                        const startY = (img.height - size) / 2;
+                        ctx.drawImage(img, startX, startY, size, size, 0, 0, size, size);
+                        const base64Img = canvas.toDataURL('image/png');
+                        document.getElementById('avatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
+                        localStorage.setItem('dog_avatar', base64Img);
+                        debounceSyncToCloud();
+                    };
+                    img.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             }
-            // 清空input，允许重复选择相同图片
             event.target.value = '';
         }
 
-        function openCropModal(imageSrc) {
-            document.getElementById('cropModal').classList.add('active');
-            const container = document.getElementById('croppieContainer');
-            
-            if (croppieInstance) {
-                croppieInstance.destroy();
-            }
-            
-            croppieInstance = new Croppie(container, {
-                viewport: { width: 160, height: 160, type: 'circle' },
-                boundary: { width: '100%', height: 260 },
-                showZoomer: true,
-                enableOrientation: true
-            });
-            
-            croppieInstance.bind({
-                url: imageSrc
-            });
-        }
-
-        function saveAvatarCrop() {
-            if (!croppieInstance) return;
-            // 采用 png 格式并且开启 circle 属性可以输出带透明背景的圆形图片
-            croppieInstance.result({
-                type: 'base64',
-                size: 'viewport',
-                format: 'png',
-                circle: true 
-            }).then(function(base64Img) {
-                document.getElementById('avatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
-                localStorage.setItem('dog_avatar', base64Img);
-                closeModal('cropModal');
-            });
-        }
-
-        // --- 身体数据管理逻辑 ---
+        // --- 身体数据逻辑 ---
         function renderLatestBodyStats() {
             if (bodyStats.length === 0) {
                 document.getElementById('displayWeight').innerText = '--';
@@ -625,8 +685,42 @@
             document.getElementById('displayLength').innerText = latest.length || '--';
         }
 
+        function checkStatsInputs() {
+            const w = document.getElementById('statInputWeight').value;
+            const c = document.getElementById('statInputChest').value;
+            const n = document.getElementById('statInputNeck').value;
+            const l = document.getElementById('statInputLength').value;
+            const btn = document.getElementById('statsSubmitBtn');
+            
+            if (!w && !c && !n && !l) {
+                btn.style.backgroundColor = '#E5E5EA';
+                btn.style.color = '#8E8E93';
+                btn.disabled = true;
+                btn.style.cursor = 'not-allowed';
+            } else {
+                btn.style.backgroundColor = 'var(--text-main)';
+                btn.style.color = '#FFF';
+                btn.disabled = false;
+                btn.style.cursor = 'pointer';
+            }
+        }
+
+        function setStatsPlaceholders() {
+            let latest = null;
+            if (bodyStats.length > 0) latest = [...bodyStats].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            
+            document.getElementById('statInputWeight').placeholder = (latest && latest.weight) ? `上次: ${latest.weight}` : '';
+            document.getElementById('statInputChest').placeholder = (latest && latest.chest) ? `上次: ${latest.chest}` : '';
+            document.getElementById('statInputNeck').placeholder = (latest && latest.neck) ? `上次: ${latest.neck}` : '';
+            document.getElementById('statInputLength').placeholder = (latest && latest.length) ? `上次: ${latest.length}` : '';
+        }
+
         function openStatsModal(editId = null) {
             const modal = document.getElementById('statsModal');
+            document.getElementById('statsForm').reset();
+            document.getElementById('statId').value = '';
+            document.getElementById('statInputDate').value = getTodayString();
+            
             if (editId) {
                 const stat = bodyStats.find(s => s.id === editId);
                 if (stat) {
@@ -636,20 +730,15 @@
                     document.getElementById('statInputNeck').value = stat.neck || '';
                     document.getElementById('statInputLength').value = stat.length || '';
                     document.getElementById('statInputDate').value = stat.date;
-                }
-            } else {
-                document.getElementById('statsForm').reset();
-                document.getElementById('statId').value = '';
-                document.getElementById('statInputDate').value = getTodayString();
-                
-                if (bodyStats.length > 0) {
-                    const latest = [...bodyStats].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-                    document.getElementById('statInputWeight').value = latest.weight || '';
-                    document.getElementById('statInputChest').value = latest.chest || '';
-                    document.getElementById('statInputNeck').value = latest.neck || '';
-                    document.getElementById('statInputLength').value = latest.length || '';
+                    
+                    document.getElementById('statInputWeight').placeholder = '';
+                    document.getElementById('statInputChest').placeholder = '';
+                    document.getElementById('statInputNeck').placeholder = '';
+                    document.getElementById('statInputLength').placeholder = '';
                 }
             }
+            setStatsPlaceholders();
+            checkStatsInputs();
             renderStatsHistoryList();
             modal.classList.add('active');
         }
@@ -663,19 +752,36 @@
             const length = document.getElementById('statInputLength').value;
             const date = document.getElementById('statInputDate').value;
             
+            if (!weight && !chest && !neck && !length) return;
+            
+            const existing = bodyStats.find(s => s.date === date && s.id !== id);
+            if (existing) {
+                const dateParts = date.split('-');
+                alert(`${dateParts[0]}年${dateParts[1]}月${dateParts[2]}日的数据已经填写过啦`);
+                return;
+            }
+            
+            let targetId = id;
             if (id) {
                 const index = bodyStats.findIndex(s => s.id === id);
                 if (index !== -1) bodyStats[index] = { id, weight, chest, neck, length, date };
             } else {
-                bodyStats.push({ id: 'stat_' + Date.now(), weight, chest, neck, length, date });
+                targetId = 'stat_' + Date.now();
+                bodyStats.push({ id: targetId, weight, chest, neck, length, date });
             }
             
             saveBodyStats();
             renderLatestBodyStats();
-            renderStatsHistoryList();
             
-            // 保存后关闭弹窗
-            closeModal('statsModal');
+            document.getElementById('statsForm').reset();
+            document.getElementById('statId').value = '';
+            document.getElementById('statInputDate').value = getTodayString();
+            setStatsPlaceholders();
+            checkStatsInputs();
+            
+            highlightedStatId = targetId;
+            renderStatsHistoryList();
+            setTimeout(() => { highlightedStatId = null; }, 2000);
         }
 
         function renderStatsHistoryList() {
@@ -684,11 +790,11 @@
                 list.innerHTML = '<div style="text-align:center; font-size:13px; color:var(--text-muted); padding:10px;">暂无历史记录</div>';
                 return;
             }
-            
             const sortedStats = [...bodyStats].sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            list.innerHTML = sortedStats.map(stat => `
-                <div class="tag-manage-item" style="flex-direction:column; align-items:flex-start; gap:8px;">
+            list.innerHTML = sortedStats.map(stat => {
+                const hlClass = (stat.id === highlightedStatId) ? 'highlight-stat' : '';
+                return `
+                <div class="tag-manage-item ${hlClass}" style="flex-direction:column; align-items:flex-start; gap:8px;">
                     <div style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #F4F3EF; padding-bottom:6px;">
                         <span style="font-weight:600; font-size:14px; color:var(--text-main);">📅 ${stat.date}</span>
                         <div class="tag-manage-actions">
@@ -703,7 +809,8 @@
                         <span>身长: <b style="color:var(--text-main)">${stat.length || '--'}</b>cm</span>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function deleteStat(id) {
@@ -723,14 +830,15 @@
 
         function renderFilterTags() {
             const container = document.getElementById('filterTagsContainer');
-            let html = `<button class="filter-tag ${currentFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">全部</button>`;
+            let html = `<button class="filter-tag" style="${currentFilter === 'all' ? 'background-color: var(--accent-yellow); color: var(--text-main); font-weight: 600;' : ''}" onclick="setFilter('all')">全部</button>`;
             
             categories.forEach(cat => {
-                html += `<button class="filter-tag ${currentFilter === cat.id ? 'active' : ''}" onclick="setFilter('${cat.id}')">${cat.name}</button>`;
+                const isActive = currentFilter === cat.id;
+                const activeStyle = isActive ? `background-color: ${cat.color}; color: var(--text-main); font-weight: 600;` : '';
+                html += `<button class="filter-tag" style="${activeStyle}" onclick="setFilter('${cat.id}')">${cat.name}</button>`;
             });
             
             html += `<button class="filter-tag" style="font-weight:bold; padding: 8px 12px;" onclick="openTagManager()">➕</button>`;
-            
             container.innerHTML = html;
         }
 
@@ -761,24 +869,16 @@
                 clearBtn.style.display = 'block';
                 const parts = dateFilter.split('-');
                 listTitle.innerText = `${parts[0]}年${parseInt(parts[1])}月`;
-                
-                filtered = filtered.filter(r => {
-                    const recordMonth = r.time.substring(0, 7); 
-                    return recordMonth === dateFilter;
-                });
+                filtered = filtered.filter(r => { return r.time.substring(0, 7) === dateFilter; });
             } else {
                 clearBtn.style.display = 'none';
                 listTitle.innerText = '所有记录';
             }
 
-            // 先按日期降序，如果同一天，则按照 order 字段升序排列，以保持用户拖拽的顺序
             filtered.sort((a, b) => {
                 const dateA = new Date(a.time).setHours(0,0,0,0);
                 const dateB = new Date(b.time).setHours(0,0,0,0);
-                if (dateB !== dateA) {
-                    return dateB - dateA;
-                }
-                // 日期相同，按order升序
+                if (dateB !== dateA) return dateB - dateA;
                 return (a.order || 0) - (b.order || 0);
             });
 
@@ -788,13 +888,10 @@
             }
 
             container.innerHTML = '';
-            
-            // 销毁旧的 Sortable 实例
             sortableInstances.forEach(inst => inst.destroy());
             sortableInstances = [];
 
             const groups = {};
-            // 按照“具体到天”进行分组，以便在同一天内进行拖拽
             filtered.forEach(item => {
                 const datePart = item.time.substring(0, 10);
                 if (!groups[datePart]) groups[datePart] = [];
@@ -803,11 +900,8 @@
 
             for (const datePart in groups) {
                 const [year, month, day] = datePart.split('-');
-                
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'month-group';
-                
-                // 表头显示具体的日期
                 groupDiv.innerHTML = `
                     <div class="month-header">
                         <span>${year}年${parseInt(month)}月${parseInt(day)}日</span>
@@ -817,23 +911,19 @@
                 `;
                 
                 const listContainer = groupDiv.querySelector('.sortable-list');
-
                 groups[datePart].forEach(item => {
                     const cat = categories.find(c => c.id === item.categoryId) || { name: '未知', emoji: '📝', color: '#F2F2F7' };
-                    
                     let timeStr = `${month}/${day}`;
                     if(item.endTime) {
                         const ed = new Date(item.endTime);
                         timeStr += ` - ${String(ed.getMonth()+1).padStart(2,'0')}/${String(ed.getDate()).padStart(2,'0')}`;
                     }
                     
+                    const hlClass = (item.id === highlightedRecordId) ? 'highlight-record' : '';
                     const card = document.createElement('div');
-                    card.className = 'record-card';
+                    card.className = `record-card ${hlClass}`;
                     card.setAttribute('data-id', item.id);
-                    
-                    // 如果详情为空，则不渲染详情div
                     const detailHtml = item.detail ? `<div class="record-detail">${item.detail.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</div>` : '';
-
                     card.innerHTML = `
                         <div class="record-icon" style="background-color: ${cat.color}">${cat.emoji}</div>
                         <div class="record-content">
@@ -853,29 +943,20 @@
                 });
                 container.appendChild(groupDiv);
 
-                // 为同一天的列表初始化 Sortable
                 const sortable = new Sortable(listContainer, {
                     animation: 150,
-                    handle: '.record-card', // 整个卡片可以拖拽，或者改为 '.drag-handle'
-                    delay: 200, // 移动端长按 200ms 后才能拖拽
-                    delayOnTouchOnly: true, // 仅在触摸设备上开启延迟，防止误触
+                    handle: '.record-card',
+                    delay: 200, 
+                    delayOnTouchOnly: true, 
                     ghostClass: 'sortable-ghost',
                     dragClass: 'sortable-drag',
                     onEnd: function (evt) {
-                        // 拖拽结束时触发，更新顺序
                         const listEl = evt.to;
-                        const dateStr = listEl.getAttribute('data-date');
                         const cardElements = listEl.querySelectorAll('.record-card');
-                        
-                        // 获取当前天在列表中的新顺序 ID 列表
                         const newOrderIds = Array.from(cardElements).map(el => el.getAttribute('data-id'));
-                        
-                        // 更新全局 records 中的 order 字段
                         newOrderIds.forEach((id, index) => {
                             const recordIndex = records.findIndex(r => r.id === id);
-                            if(recordIndex !== -1) {
-                                records[recordIndex].order = index;
-                            }
+                            if(recordIndex !== -1) records[recordIndex].order = index;
                         });
                         saveRecords();
                     },
@@ -884,12 +965,10 @@
             }
         }
 
-        // 控制结束日期的显示隐藏
         function toggleEndDate() {
             const isSingleDay = document.getElementById('isSingleDay').checked;
             const endTimeInput = document.getElementById('recordEndTime');
             const endSeparator = document.getElementById('endDateSeparator');
-            
             if(isSingleDay) {
                 endTimeInput.style.display = 'none';
                 endSeparator.style.display = 'none';
@@ -900,11 +979,9 @@
             }
         }
 
-        // --- 记录操作 Modal ---
         function openRecordModal(editId = null) {
             const modal = document.getElementById('recordModal');
             const grid = document.getElementById('recordCategoryGrid');
-            
             grid.innerHTML = categories.map(cat => `
                 <div class="category-item" id="cat-select-${cat.id}" data-id="${cat.id}" style="background-color: ${cat.color}33;" onclick="selectRecordCategory('${cat.id}')">
                     <span>${cat.emoji}</span><span>${cat.name}</span>
@@ -917,7 +994,6 @@
                     document.getElementById('recordModalTitle').innerText = '修改记录';
                     document.getElementById('recordId').value = item.id;
                     document.getElementById('recordTime').value = item.time.substring(0, 10);
-                    
                     if(item.endTime) {
                         document.getElementById('recordEndTime').value = item.endTime;
                         document.getElementById('isSingleDay').checked = false;
@@ -925,7 +1001,6 @@
                         document.getElementById('recordEndTime').value = '';
                         document.getElementById('isSingleDay').checked = true;
                     }
-                    
                     document.getElementById('recordDetail').value = item.detail || '';
                     selectRecordCategory(item.categoryId);
                 }
@@ -935,7 +1010,6 @@
                 document.getElementById('recordId').value = '';
                 document.getElementById('recordEndTime').value = '';
                 document.getElementById('isSingleDay').checked = true;
-                
                 document.getElementById('recordTime').value = getTodayString();
                 if(categories.length > 0) selectRecordCategory(categories[0].id);
             }
@@ -944,8 +1018,6 @@
 
         function selectRecordCategory(id) {
             selectedRecordCategory = id;
-            
-            // 样式修改
             document.querySelectorAll('#recordCategoryGrid .category-item').forEach(el => {
                 if (el.getAttribute('data-id') === id) {
                     el.style.borderColor = 'var(--text-main)';
@@ -957,16 +1029,14 @@
                 }
             });
             
-            // 当选中带有“病”字的类别时，显示“仅一天”复选框
             const cat = categories.find(c => c.id === id);
             const singleDayToggle = document.getElementById('singleDayToggle');
             const endTimeInput = document.getElementById('recordEndTime');
             const endSeparator = document.getElementById('endDateSeparator');
             const isSingleDay = document.getElementById('isSingleDay');
             
-            if(cat && cat.name.includes('病')) {
+            if(cat && (cat.name.includes('病') || cat.name.includes('医院'))) {
                 singleDayToggle.style.display = 'flex';
-                // 恢复之前的勾选状态
                 if (isSingleDay.checked) {
                     endTimeInput.style.display = 'none';
                     endSeparator.style.display = 'none';
@@ -992,10 +1062,11 @@
             const isSingleDay = document.getElementById('isSingleDay').checked;
             
             const cat = categories.find(c => c.id === selectedRecordCategory);
-            if (cat && cat.name.includes('病') && !isSingleDay && !endTime) {
+            if (cat && (cat.name.includes('病') || cat.name.includes('医院')) && !isSingleDay && !endTime) {
                 return alert('请选择结束日期，或勾选“仅一天”');
             }
             
+            let targetId = id;
             if (id) {
                 const index = records.findIndex(r => r.id === id);
                 if (index !== -1) {
@@ -1005,10 +1076,10 @@
                     records[index].detail = detail;
                 }
             } else {
-                // 新增时赋予最大 order，默认排在当天末尾
                 const maxOrder = records.reduce((max, r) => (r.order > max ? r.order : max), 0);
+                targetId = Date.now().toString();
                 records.push({ 
-                    id: Date.now().toString(), 
+                    id: targetId, 
                     categoryId: selectedRecordCategory, 
                     time, 
                     endTime: endTime || null,
@@ -1017,8 +1088,11 @@
                 });
             }
             saveRecords();
+            highlightedRecordId = targetId; 
             renderRecords();
             closeModal('recordModal');
+            
+            setTimeout(() => { highlightedRecordId = null; }, 2000);
         }
 
         function deleteRecord(id) {
@@ -1163,12 +1237,13 @@
                         categories = imported.categories;
                         records = imported.records;
                         bodyStats = imported.bodyStats || [];
-                        saveCategories();
-                        saveRecords();
-                        saveBodyStats();
+                        saveCategories(false);
+                        saveRecords(false);
+                        saveBodyStats(false);
                         loadSettings();
                         renderApp();
                         alert('数据导入成功！');
+                        debounceSyncToCloud();
                     } else alert('数据格式不正确');
                 } catch (err) { alert('读取失败，请确认文件'); }
             };
