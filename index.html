@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>记录狗狗的每一天</title>
+    <!-- 引入 SortableJS 库以支持拖拽 -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
             --bg-color: #FDFBF7;
@@ -46,7 +48,7 @@
         }
         .user-profile { display: flex; align-items: center; gap: 16px; }
         
-        .avatar-container { position: relative; cursor: pointer; }
+        .avatar-container { position: relative; cursor: pointer; flex-shrink: 0; }
         .avatar {
             width: 72px; height: 72px;
             background: #EFEFEF; border-radius: 50%;
@@ -63,7 +65,7 @@
         }
 
         .greeting-text { display: flex; flex-direction: column; }
-        .greeting { font-size: 14px; color: var(--text-muted); margin-bottom: 4px; }
+        .greeting { font-size: 16px; font-weight: 400; color: var(--text-muted); margin-bottom: 2px; }
         
         .name-wrapper {
             display: flex; align-items: center; 
@@ -76,6 +78,17 @@
         .pet-name-input:focus, .pet-name-input:hover {
             border-bottom-color: var(--text-muted);
         }
+
+        /* 身体数据栏 */
+        .body-stats-wrapper {
+            display: flex; gap: 12px; font-size: 14px; color: var(--text-muted);
+            margin-top: 4px; cursor: pointer; border-bottom: 1px dashed transparent;
+            transition: border-color 0.2s; padding-bottom: 2px; width: fit-content;
+        }
+        .body-stats-wrapper:hover {
+            border-bottom-color: var(--text-muted);
+        }
+        .body-stats-wrapper b { color: var(--text-main); font-weight: 600; }
 
         .slogan-input {
             width: 100%; background: transparent; border: none;
@@ -108,21 +121,28 @@
             font-size: 18px; font-weight: 700; color: var(--text-main);
         }
         
+        /* 定制日历筛选器 */
         .date-filter-wrapper {
-            display: flex; align-items: center; background: var(--tag-bg); border-radius: 8px; padding-right: 8px;
+            position: relative; display: flex; align-items: center; background: var(--tag-bg); 
+            border-radius: 12px; padding: 6px 12px; overflow: hidden;
+        }
+        .date-filter-icon {
+            font-size: 18px; pointer-events: none;
         }
         .date-filter-input {
-            background: transparent; border: none; 
-            padding: 8px 8px 8px 12px; font-size: 13px; color: var(--text-main); outline: none;
-            font-weight: 500;
+            position: absolute; left: 0; top: 0; width: 100%; height: 100%; 
+            opacity: 0; cursor: pointer; z-index: 1;
         }
         .date-clear-btn {
             background: none; border: none; color: var(--text-muted); 
-            font-size: 14px; cursor: pointer; display: none; padding: 0 4px;
+            font-size: 14px; cursor: pointer; display: none; 
+            padding-left: 8px; border-left: 1px solid #D1D1D6; margin-left: 8px; 
+            position: relative; z-index: 2; font-weight: bold;
         }
 
         /* 列表 */
         .container { padding: 4px 24px 10px; }
+        .month-group { margin-bottom: 20px; }
         .month-header {
             font-size: 15px; font-weight: 600; color: var(--text-muted);
             margin: 16px 0 12px; display: flex; align-items: center; justify-content: space-between;
@@ -132,7 +152,19 @@
         .record-card {
             background: var(--card-bg); border-radius: var(--radius-xl); padding: 16px 20px;
             margin-bottom: 16px; box-shadow: var(--shadow-soft); display: flex; gap: 16px; align-items: flex-start;
+            transition: transform 0.2s; /* 拖拽时的动画 */
+            position: relative;
         }
+        /* 拖拽状态的样式 */
+        .sortable-ghost {
+            opacity: 0.4;
+        }
+        .sortable-drag {
+            transform: scale(1.02);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+        
         .record-icon {
             width: 48px; height: 48px; border-radius: var(--radius-lg);
             display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
@@ -144,6 +176,14 @@
         .record-detail { font-size: 14px; color: var(--text-muted); line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
         .record-actions { margin-top: 10px; display: flex; gap: 16px; justify-content: flex-end; }
         .action-btn { background: none; border: none; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+        
+        /* 拖拽手柄指示器 */
+        .drag-handle {
+            display: none; /* 默认隐藏，或者可以显示一个细微的图标 */
+            position: absolute; right: 16px; top: 16px;
+            color: #C7C7CC; cursor: grab; font-size: 16px;
+        }
+        .record-card:hover .drag-handle { display: block; }
 
         /* FAB悬浮按钮 */
         .fab-container {
@@ -200,7 +240,7 @@
         .tag-manage-list { display: flex; flex-direction: column; gap: 10px; }
         .tag-manage-item {
             display: flex; align-items: center; justify-content: space-between; background: var(--card-bg);
-            padding: 10px 16px; border-radius: 12px;
+            padding: 12px 16px; border-radius: 12px;
         }
         .tag-manage-info { display: flex; align-items: center; gap: 12px; font-weight: 500; }
         .tag-manage-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;}
@@ -231,10 +271,16 @@
                     <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
                 </label>
                 <div class="greeting-text">
-                    <span class="greeting" id="greetingMsg">Good morning</span>
+                    <span class="greeting" id="greetingMsg">Good morning ☀️</span>
                     <!-- 狗狗名字修改 -->
                     <div class="name-wrapper">
                         <input type="text" id="petName" class="pet-name-input" value="Emma" onblur="saveSettings()" placeholder="输入名字" title="点击修改名字">
+                    </div>
+                    <!-- 身体数据修改 -->
+                    <div class="body-stats-wrapper" onclick="openStatsModal()" title="点击修改身体数据">
+                        <span>体重: <b id="displayWeight">--</b> kg</span>
+                        <span>颈围: <b id="displayNeck">--</b> cm</span>
+                        <span>胸围: <b id="displayChest">--</b> cm</span>
                     </div>
                 </div>
             </div>
@@ -249,10 +295,10 @@
     </div>
 
     <!-- 列表顶部栏：所有记录 + 时间筛选 (按月) -->
-    <div class="list-header-bar">
+    <div class="list-header-bar" id="listHeaderBar">
         <div class="list-header-title" id="listTitle">所有记录</div>
-        <div class="date-filter-wrapper">
-            <!-- 变更为 month，精确到年月 -->
+        <div class="date-filter-wrapper" id="dateFilterWrapper" title="筛选月份">
+            <span class="date-filter-icon">📅</span>
             <input type="month" id="dateFilter" class="date-filter-input" onchange="renderRecords()">
             <button class="date-clear-btn" id="clearDateBtn" onclick="clearDateFilter()" title="清除日期">✕</button>
         </div>
@@ -285,8 +331,45 @@
                     <label class="form-label">详情</label>
                     <textarea id="recordDetail" class="form-textarea" placeholder="写下今天发生的事情..." required></textarea>
                 </div>
-                <button type="submit" class="btn-submit">保存</button>
+                <button type="submit" class="btn-submit">保存记录</button>
             </form>
+        </div>
+    </div>
+
+    <!-- 身体数据管理弹窗 -->
+    <div class="modal-overlay" id="statsModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">身体数据记录</div>
+                <button class="modal-close" onclick="closeModal('statsModal')">✕</button>
+            </div>
+            <form id="statsForm" onsubmit="handleStatsSubmit(event)">
+                <input type="hidden" id="statId">
+                <div class="category-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">体重(kg)</label>
+                        <input type="number" step="0.1" id="statInputWeight" class="form-input" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">颈围(cm)</label>
+                        <input type="number" step="0.1" id="statInputNeck" class="form-input" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">胸围(cm)</label>
+                        <input type="number" step="0.1" id="statInputChest" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:16px;">
+                    <label class="form-label">测量日期</label>
+                    <input type="date" id="statInputDate" class="form-input" required>
+                </div>
+                <button type="submit" class="btn-submit">保存数据</button>
+            </form>
+            
+            <div style="margin-top: 32px;">
+                <div class="form-label" style="font-weight: 600; color: var(--text-main);">历史数据记录</div>
+                <div class="tag-manage-list" id="statsHistoryList"></div>
+            </div>
         </div>
     </div>
 
@@ -344,21 +427,21 @@
     </div>
 
     <script>
-        // 默认类别配置
         const DEFAULT_CATEGORIES = [
-            { id: 'c1', name: '生病', emoji: '🏥', color: '#FFE8E8' },
-            { id: 'c2', name: '洗澡', emoji: '🛁', color: '#E8F4FF' },
+            { id: 'c1', name: '饮食', emoji: '🍖', color: '#F3E8FF' },
+            { id: 'c2', name: '出去玩', emoji: '🎾', color: '#FFF4D4' },
             { id: 'c3', name: '驱虫', emoji: '💊', color: '#EAF6E3' },
-            { id: 'c4', name: '出去玩', emoji: '🎾', color: '#FFF4D4' },
-            { id: 'c5', name: '饮食', emoji: '🍖', color: '#F3E8FF' },
-            { id: 'c6', name: '其它', emoji: '📝', color: '#F2F2F7' }
+            { id: 'c4', name: '洗澡', emoji: '🛁', color: '#E8F4FF' },
+            { id: 'c5', name: '生病', emoji: '🏥', color: '#FFE8E8' }
         ];
 
         let records = [];
         let categories = [];
+        let bodyStats = [];
         let currentFilter = 'all';
         let selectedRecordCategory = '';
         let selectedTagColor = '#FFE8E8';
+        let sortableInstances = []; // 存储所有Sortable实例，方便销毁重建
 
         function getTodayString() {
             const d = new Date();
@@ -373,7 +456,14 @@
             setGreeting();
             loadSettings();
             
-            // 默认清空日期筛选器，展示所有记录
+            // 确保旧数据包含 order 字段
+            records.forEach((r, index) => {
+                if (r.order === undefined) {
+                    r.order = index; 
+                }
+            });
+            saveRecords();
+            
             document.getElementById('dateFilter').value = '';
             
             renderApp();
@@ -382,7 +472,7 @@
 
         function setGreeting() {
             const hour = new Date().getHours();
-            document.getElementById('greetingMsg').innerText = hour < 12 ? 'Good morning' : (hour < 18 ? 'Good afternoon' : 'Good evening');
+            document.getElementById('greetingMsg').innerText = hour < 12 ? 'Good morning ☀️' : (hour < 18 ? 'Good afternoon ☕' : 'Good evening 🌙');
         }
 
         // --- 数据加载与保存 ---
@@ -395,7 +485,6 @@
                 document.getElementById('slogan').value = savedSlogan;
             }
             
-            // 将网页Title设置为当前的slogan，如果为空则使用默认值
             document.title = document.getElementById('slogan').value.trim() || '狗狗日常记录';
 
             const savedAvatar = localStorage.getItem('dog_avatar');
@@ -408,6 +497,11 @@
 
             const savedRecords = localStorage.getItem('dog_records');
             records = savedRecords ? JSON.parse(savedRecords) : [];
+            
+            const savedBodyStats = localStorage.getItem('dog_body_stats');
+            bodyStats = savedBodyStats ? JSON.parse(savedBodyStats) : [];
+            
+            renderLatestBodyStats();
         }
 
         function saveSettings() {
@@ -417,7 +511,6 @@
             localStorage.setItem('dog_name', petName);
             localStorage.setItem('dog_slogan', slogan);
             
-            // 实时更新网页Title
             document.title = slogan || '狗狗日常记录';
         }
 
@@ -427,6 +520,10 @@
 
         function saveRecords() {
             localStorage.setItem('dog_records', JSON.stringify(records));
+        }
+        
+        function saveBodyStats() {
+            localStorage.setItem('dog_body_stats', JSON.stringify(bodyStats));
         }
 
         function handleAvatarUpload(event) {
@@ -439,6 +536,106 @@
                     localStorage.setItem('dog_avatar', base64Img);
                 };
                 reader.readAsDataURL(file);
+            }
+        }
+
+        // --- 身体数据管理逻辑 ---
+        function renderLatestBodyStats() {
+            if (bodyStats.length === 0) {
+                document.getElementById('displayWeight').innerText = '--';
+                document.getElementById('displayNeck').innerText = '--';
+                document.getElementById('displayChest').innerText = '--';
+                return;
+            }
+            const latest = [...bodyStats].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            document.getElementById('displayWeight').innerText = latest.weight;
+            document.getElementById('displayNeck').innerText = latest.neck;
+            document.getElementById('displayChest').innerText = latest.chest;
+        }
+
+        function openStatsModal(editId = null) {
+            const modal = document.getElementById('statsModal');
+            if (editId) {
+                const stat = bodyStats.find(s => s.id === editId);
+                if (stat) {
+                    document.getElementById('statId').value = stat.id;
+                    document.getElementById('statInputWeight').value = stat.weight;
+                    document.getElementById('statInputNeck').value = stat.neck;
+                    document.getElementById('statInputChest').value = stat.chest;
+                    document.getElementById('statInputDate').value = stat.date;
+                }
+            } else {
+                document.getElementById('statsForm').reset();
+                document.getElementById('statId').value = '';
+                document.getElementById('statInputDate').value = getTodayString();
+                
+                if (bodyStats.length > 0) {
+                    const latest = [...bodyStats].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                    document.getElementById('statInputWeight').value = latest.weight;
+                    document.getElementById('statInputNeck').value = latest.neck;
+                    document.getElementById('statInputChest').value = latest.chest;
+                }
+            }
+            renderStatsHistoryList();
+            modal.classList.add('active');
+        }
+
+        function handleStatsSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('statId').value;
+            const weight = document.getElementById('statInputWeight').value;
+            const neck = document.getElementById('statInputNeck').value;
+            const chest = document.getElementById('statInputChest').value;
+            const date = document.getElementById('statInputDate').value;
+            
+            if (id) {
+                const index = bodyStats.findIndex(s => s.id === id);
+                if (index !== -1) bodyStats[index] = { id, weight, neck, chest, date };
+            } else {
+                bodyStats.push({ id: 'stat_' + Date.now(), weight, neck, chest, date });
+            }
+            
+            saveBodyStats();
+            renderLatestBodyStats();
+            document.getElementById('statsForm').reset();
+            document.getElementById('statId').value = '';
+            document.getElementById('statInputDate').value = getTodayString();
+            renderStatsHistoryList();
+        }
+
+        function renderStatsHistoryList() {
+            const list = document.getElementById('statsHistoryList');
+            if (bodyStats.length === 0) {
+                list.innerHTML = '<div style="text-align:center; font-size:13px; color:var(--text-muted); padding:10px;">暂无历史记录</div>';
+                return;
+            }
+            
+            const sortedStats = [...bodyStats].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            list.innerHTML = sortedStats.map(stat => `
+                <div class="tag-manage-item" style="flex-direction:column; align-items:flex-start; gap:8px;">
+                    <div style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #F4F3EF; padding-bottom:6px;">
+                        <span style="font-weight:600; font-size:14px; color:var(--text-main);">📅 ${stat.date}</span>
+                        <div class="tag-manage-actions">
+                            <button type="button" class="icon-btn" onclick="openStatsModal('${stat.id}')">✏️</button>
+                            <button type="button" class="icon-btn" onclick="deleteStat('${stat.id}')" style="color:#FF5C5C">🗑️</button>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:16px; font-size:13px; color:var(--text-muted);">
+                        <span>⚖️ 体重: <b style="color:var(--text-main)">${stat.weight}</b>kg</span>
+                        <span>🧣 颈围: <b style="color:var(--text-main)">${stat.neck}</b>cm</span>
+                        <span>🎽 胸围: <b style="color:var(--text-main)">${stat.chest}</b>cm</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteStat(id) {
+            if (confirm('确定删除这条身体数据记录？')) {
+                bodyStats = bodyStats.filter(s => s.id !== id);
+                saveBodyStats();
+                renderLatestBodyStats();
+                renderStatsHistoryList();
             }
         }
 
@@ -456,7 +653,6 @@
                 html += `<button class="filter-tag ${currentFilter === cat.id ? 'active' : ''}" onclick="setFilter('${cat.id}')">${cat.name}</button>`;
             });
             
-            // 添加 ➕ 号按钮管理分类
             html += `<button class="filter-tag" style="font-weight:bold; padding: 8px 12px;" onclick="openTagManager()">➕</button>`;
             
             container.innerHTML = html;
@@ -475,25 +671,23 @@
 
         function renderRecords() {
             const container = document.getElementById('recordsContainer');
-            const dateFilter = document.getElementById('dateFilter').value; // YYYY-MM
+            const dateFilter = document.getElementById('dateFilter').value; 
             const clearBtn = document.getElementById('clearDateBtn');
             const listTitle = document.getElementById('listTitle');
             
             let filtered = records;
             
-            // 分类过滤
             if (currentFilter !== 'all') {
                 filtered = filtered.filter(r => r.categoryId === currentFilter);
             }
             
-            // 时间过滤及标题更新 (按月筛选)
             if (dateFilter) {
                 clearBtn.style.display = 'block';
                 const parts = dateFilter.split('-');
                 listTitle.innerText = `${parts[0]}年${parseInt(parts[1])}月`;
                 
                 filtered = filtered.filter(r => {
-                    const recordMonth = r.time.substring(0, 7); // 提取 YYYY-MM
+                    const recordMonth = r.time.substring(0, 7); 
                     return recordMonth === dateFilter;
                 });
             } else {
@@ -501,7 +695,16 @@
                 listTitle.innerText = '所有记录';
             }
 
-            filtered.sort((a, b) => new Date(b.time) - new Date(a.time));
+            // 先按日期降序，如果同一天，则按照 order 字段升序排列，以保持用户拖拽的顺序
+            filtered.sort((a, b) => {
+                const dateA = new Date(a.time).setHours(0,0,0,0);
+                const dateB = new Date(b.time).setHours(0,0,0,0);
+                if (dateB !== dateA) {
+                    return dateB - dateA;
+                }
+                // 日期相同，按order升序
+                return (a.order || 0) - (b.order || 0);
+            });
 
             if (filtered.length === 0) {
                 container.innerHTML = `<div class="empty-state">🍃<br><br>没有找到相关记录哦，快去记一笔吧！</div>`;
@@ -509,31 +712,44 @@
             }
 
             container.innerHTML = '';
+            
+            // 销毁旧的 Sortable 实例
+            sortableInstances.forEach(inst => inst.destroy());
+            sortableInstances = [];
+
             const groups = {};
+            // 在此修改分组逻辑：按照“具体到天”进行分组，以便在同一天内进行拖拽
             filtered.forEach(item => {
                 const datePart = item.time.substring(0, 10);
-                const [year, month, day] = datePart.split('-');
-                const k = `${year}年 ${parseInt(month)}月`;
-                if (!groups[k]) groups[k] = [];
-                groups[k].push(item);
+                if (!groups[datePart]) groups[datePart] = [];
+                groups[datePart].push(item);
             });
 
-            for (const k in groups) {
-                const g = document.createElement('div');
-                // 仅在显示"所有记录"时显示月份分组表头
-                if (!dateFilter) {
-                    g.innerHTML = `<div class="month-header"><span>${k}</span><span class="month-count">${groups[k].length} 项记录</span></div>`;
-                }
+            for (const datePart in groups) {
+                const [year, month, day] = datePart.split('-');
                 
-                groups[k].forEach(item => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'month-group';
+                
+                // 表头显示具体的日期
+                groupDiv.innerHTML = `
+                    <div class="month-header">
+                        <span>${year}年${parseInt(month)}月${parseInt(day)}日</span>
+                        <span class="month-count">${groups[datePart].length} 项记录</span>
+                    </div>
+                    <div class="sortable-list" data-date="${datePart}"></div>
+                `;
+                
+                const listContainer = groupDiv.querySelector('.sortable-list');
+
+                groups[datePart].forEach(item => {
                     const cat = categories.find(c => c.id === item.categoryId) || { name: '未知', emoji: '📝', color: '#F2F2F7' };
                     
-                    const datePart = item.time.substring(0, 10);
-                    const [year, month, day] = datePart.split('-');
                     const timeStr = `${month}/${day}`;
                     
                     const card = document.createElement('div');
                     card.className = 'record-card';
+                    card.setAttribute('data-id', item.id);
                     card.innerHTML = `
                         <div class="record-icon" style="background-color: ${cat.color}">${cat.emoji}</div>
                         <div class="record-content">
@@ -547,10 +763,40 @@
                                 <button class="action-btn" onclick="deleteRecord('${item.id}')" style="color:#FF5C5C">删除</button>
                             </div>
                         </div>
+                        <div class="drag-handle" title="长按拖拽修改顺序">☰</div>
                     `;
-                    g.appendChild(card);
+                    listContainer.appendChild(card);
                 });
-                container.appendChild(g);
+                container.appendChild(groupDiv);
+
+                // 为同一天的列表初始化 Sortable
+                const sortable = new Sortable(listContainer, {
+                    animation: 150,
+                    handle: '.record-card', // 整个卡片可以拖拽，或者改为 '.drag-handle'
+                    delay: 200, // 移动端长按 200ms 后才能拖拽
+                    delayOnTouchOnly: true, // 仅在触摸设备上开启延迟，防止误触
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    onEnd: function (evt) {
+                        // 拖拽结束时触发，更新顺序
+                        const listEl = evt.to;
+                        const dateStr = listEl.getAttribute('data-date');
+                        const cardElements = listEl.querySelectorAll('.record-card');
+                        
+                        // 获取当前天在列表中的新顺序 ID 列表
+                        const newOrderIds = Array.from(cardElements).map(el => el.getAttribute('data-id'));
+                        
+                        // 更新全局 records 中的 order 字段
+                        newOrderIds.forEach((id, index) => {
+                            const recordIndex = records.findIndex(r => r.id === id);
+                            if(recordIndex !== -1) {
+                                records[recordIndex].order = index;
+                            }
+                        });
+                        saveRecords();
+                    },
+                });
+                sortableInstances.push(sortable);
             }
         }
 
@@ -579,7 +825,6 @@
                 document.getElementById('recordForm').reset();
                 document.getElementById('recordId').value = '';
                 
-                // 默认日期为今天
                 document.getElementById('recordTime').value = getTodayString();
                 if(categories.length > 0) selectRecordCategory(categories[0].id);
             }
@@ -609,9 +854,21 @@
             
             if (id) {
                 const index = records.findIndex(r => r.id === id);
-                if (index !== -1) records[index] = { id, categoryId: selectedRecordCategory, time, detail };
+                if (index !== -1) {
+                    records[index].categoryId = selectedRecordCategory;
+                    records[index].time = time;
+                    records[index].detail = detail;
+                }
             } else {
-                records.push({ id: Date.now().toString(), categoryId: selectedRecordCategory, time, detail });
+                // 新增时赋予最大 order，默认排在当天末尾
+                const maxOrder = records.reduce((max, r) => (r.order > max ? r.order : max), 0);
+                records.push({ 
+                    id: Date.now().toString(), 
+                    categoryId: selectedRecordCategory, 
+                    time, 
+                    detail,
+                    order: maxOrder + 1 
+                });
             }
             saveRecords();
             renderRecords();
@@ -734,7 +991,8 @@
                 slogan: localStorage.getItem('dog_slogan'),
                 avatar: localStorage.getItem('dog_avatar'),
                 categories: categories,
-                records: records
+                records: records,
+                bodyStats: bodyStats
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             const a = document.createElement('a');
@@ -758,8 +1016,10 @@
                         if(imported.avatar) localStorage.setItem('dog_avatar', imported.avatar);
                         categories = imported.categories;
                         records = imported.records;
+                        bodyStats = imported.bodyStats || [];
                         saveCategories();
                         saveRecords();
+                        saveBodyStats();
                         loadSettings();
                         renderApp();
                         alert('数据导入成功！');
