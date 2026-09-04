@@ -3,28 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🐶 狗狗日常记录</title>
+    <title>记录狗狗的每一天</title>
     <style>
         :root {
-            /* 奶油治愈系配色 */
-            --bg-color: #FDFBF7;       /* 燕麦奶油背景 */
-            --card-bg: #FFFFFF;        /* 纯白卡片 */
-            --text-main: #2C2C2C;      /* 主文本：深灰 */
-            --text-muted: #8E8E93;     /* 次要文本：浅灰 */
+            --bg-color: #FDFBF7;
+            --card-bg: #FFFFFF;
+            --text-main: #2C2C2C;
+            --text-muted: #8E8E93;
+            --accent-yellow: #FFD479;
+            --tag-bg: #F4F3EF;
             
-            /* 提取自参考图的马卡龙色 */
-            --accent-yellow: #FFD479;  /* 温暖鹅黄 (高亮色) */
-            --tag-bg: #F4F3EF;         /* 未选中标签的浅灰底色 */
-            
-            /* 分类柔和背景色 */
-            --color-pink: #FFE8E8;     
-            --color-blue: #E8F4FF;     
-            --color-green: #EAF6E3;    
-            --color-yellow: #FFF4D4;   
-            --color-purple: #F3E8FF;   
-            --color-gray: #F2F2F7;     
-            
-            /* 圆角与阴影 */
             --radius-xl: 24px;
             --radius-lg: 16px;
             --radius-pill: 100px;
@@ -48,554 +36,514 @@
             min-height: 100vh;
         }
 
-        /* 顶部 Header：模仿参考图 */
-        .header {
-            padding: 24px 24px 10px;
-        }
-
+        /* 头部放大 */
+        .header { padding: 36px 24px 16px; }
         .header-top {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 20px;
         }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .user-profile { display: flex; align-items: center; gap: 16px; }
+        
+        .avatar-container { position: relative; cursor: pointer; }
         .avatar {
-            width: 44px;
-            height: 44px;
-            background: #EFEFEF;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
+            width: 72px; height: 72px;
+            background: #EFEFEF; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px; overflow: hidden; object-fit: cover;
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-hint {
+            position: absolute; bottom: -2px; right: -2px;
+            background: var(--text-main); color: #fff;
+            border-radius: 50%; width: 22px; height: 22px;
+            font-size: 10px; display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--bg-color);
         }
 
-        .greeting-text {
-            display: flex;
-            flex-direction: column;
+        .greeting-text { display: flex; flex-direction: column; }
+        .greeting { font-size: 14px; color: var(--text-muted); margin-bottom: 4px; }
+        
+        .name-wrapper {
+            display: flex; align-items: center; 
         }
-
-        .greeting {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 2px;
-        }
-
         .pet-name-input {
-            background: transparent;
-            border: none;
-            color: var(--text-main);
-            font-size: 16px;
-            font-weight: 600;
-            outline: none;
-            width: 150px;
+            background: transparent; border: none; color: var(--text-main);
+            font-size: 22px; font-weight: 700; outline: none; width: 140px;
+            border-bottom: 1px dashed transparent; transition: border-color 0.2s;
+        }
+        .pet-name-input:focus, .pet-name-input:hover {
+            border-bottom-color: var(--text-muted);
         }
 
-        .bell-icon {
-            color: var(--text-muted);
-            font-size: 20px;
+        .slogan-input {
+            width: 100%; background: transparent; border: none;
+            font-size: 28px; font-weight: 700; color: var(--text-main);
+            margin-bottom: 16px; outline: none;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            border-bottom: 1px dashed transparent; transition: border-color 0.2s;
+        }
+        .slogan-input:focus, .slogan-input:hover {
+            border-bottom-color: var(--text-muted);
         }
 
-        .slogan {
-            font-size: 28px;
-            font-weight: 700;
-            line-height: 1.3;
-            color: var(--text-main);
-            margin-bottom: 20px;
-        }
-
-        /* 胶囊状筛选标签 */
+        /* 筛选区 */
         .filter-section {
-            padding: 0 24px 16px;
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            scrollbar-width: none;
+            padding: 0 24px 16px; display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none;
         }
         .filter-section::-webkit-scrollbar { display: none; }
-
         .filter-tag {
-            padding: 8px 16px;
-            background: var(--tag-bg);
-            border-radius: var(--radius-pill);
-            font-size: 14px;
-            font-weight: 500;
-            white-space: nowrap;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.2s;
+            padding: 8px 16px; background: var(--tag-bg); border-radius: var(--radius-pill);
+            font-size: 14px; font-weight: 500; white-space: nowrap; color: var(--text-muted);
+            cursor: pointer; transition: all 0.2s; border: none; display: flex; align-items: center; justify-content: center;
         }
-
-        .filter-tag.active {
-            background: var(--accent-yellow);
-            color: var(--text-main);
-            font-weight: 600;
+        .filter-tag.active { background: var(--accent-yellow); color: var(--text-main); font-weight: 600; }
+        
+        /* 列表顶部区域 (包含日期筛选) */
+        .list-header-bar {
+            padding: 10px 24px 0; display: flex; align-items: center; justify-content: space-between;
         }
-
-        /* 列表容器 */
-        .container {
-            padding: 10px 24px;
-        }
-
-        .month-header {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-main);
-            margin: 20px 0 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .month-count {
-            font-size: 12px;
-            color: var(--text-muted);
-            font-weight: normal;
-        }
-
-        /* 极简圆润卡片 */
-        .record-card {
-            background: var(--card-bg);
-            border-radius: var(--radius-xl);
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-soft);
-            display: flex;
-            gap: 16px;
-            align-items: flex-start;
-        }
-
-        .record-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: var(--radius-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            flex-shrink: 0;
-        }
-
-        .bg-sick { background-color: var(--color-pink); }
-        .bg-bath { background-color: var(--color-blue); }
-        .bg-deworm { background-color: var(--color-green); }
-        .bg-play { background-color: var(--color-yellow); }
-        .bg-food { background-color: var(--color-purple); }
-        .bg-other { background-color: var(--color-gray); }
-
-        .record-content {
-            flex: 1;
-        }
-
-        .record-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-
-        .record-title {
-            font-weight: 600;
-            font-size: 16px;
-            color: var(--text-main);
-        }
-
-        .record-time {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .record-detail {
-            font-size: 14px;
-            color: var(--text-muted);
-            line-height: 1.5;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .record-actions {
-            margin-top: 12px;
-            display: flex;
-            gap: 16px;
-            justify-content: flex-end;
-        }
-
-        .action-btn {
-            background: none;
-            border: none;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-muted);
-            cursor: pointer;
+        .list-header-title {
+            font-size: 18px; font-weight: 700; color: var(--text-main);
         }
         
-        .action-btn:hover { color: var(--text-main); }
+        .date-filter-wrapper {
+            display: flex; align-items: center; background: var(--tag-bg); border-radius: 8px; padding-right: 8px;
+        }
+        .date-filter-input {
+            background: transparent; border: none; 
+            padding: 8px 8px 8px 12px; font-size: 13px; color: var(--text-main); outline: none;
+            font-weight: 500;
+        }
+        .date-clear-btn {
+            background: none; border: none; color: var(--text-muted); 
+            font-size: 14px; cursor: pointer; display: none; padding: 0 4px;
+        }
 
-        /* 悬浮添加按钮：居中圆润 */
+        /* 列表 */
+        .container { padding: 4px 24px 10px; }
+        .month-header {
+            font-size: 15px; font-weight: 600; color: var(--text-muted);
+            margin: 16px 0 12px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .month-count { font-size: 12px; font-weight: normal; }
+
+        .record-card {
+            background: var(--card-bg); border-radius: var(--radius-xl); padding: 16px 20px;
+            margin-bottom: 16px; box-shadow: var(--shadow-soft); display: flex; gap: 16px; align-items: flex-start;
+        }
+        .record-icon {
+            width: 48px; height: 48px; border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
+        }
+        .record-content { flex: 1; }
+        .record-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .record-title { font-weight: 600; font-size: 16px; color: var(--text-main); }
+        .record-time { font-size: 13px; color: var(--text-muted); font-weight: 500;}
+        .record-detail { font-size: 14px; color: var(--text-muted); line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+        .record-actions { margin-top: 10px; display: flex; gap: 16px; justify-content: flex-end; }
+        .action-btn { background: none; border: none; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+
+        /* FAB悬浮按钮 */
         .fab-container {
-            position: fixed;
-            bottom: 30px;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: center;
-            pointer-events: none;
-            z-index: 99;
+            position: fixed; bottom: 30px; left: 0; right: 0;
+            display: flex; justify-content: center; pointer-events: none; z-index: 99;
         }
-
         .fab {
-            width: 64px;
-            height: 64px;
-            background: var(--text-main);
-            color: #FFF;
-            border: none;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            cursor: pointer;
-            pointer-events: auto;
-            transition: transform 0.2s;
+            width: 60px; height: 60px; background: var(--text-main); color: #FFF;
+            border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); cursor: pointer; pointer-events: auto;
         }
 
-        .fab:active {
-            transform: scale(0.92);
-        }
-
-        /* 柔和底部弹窗 */
+        /* Modal通用 */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(4px);
-            display: none;
-            align-items: flex-end;
-            justify-content: center;
-            z-index: 1000;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
+            display: none; align-items: flex-end; justify-content: center; z-index: 1000;
         }
-
         .modal-overlay.active { display: flex; }
-
         .modal-card {
-            background: var(--bg-color);
-            width: 100%;
-            max-width: 600px;
-            border-radius: 32px 32px 0 0;
-            padding: 30px 24px 40px;
+            background: var(--bg-color); width: 100%; max-width: 600px;
+            border-radius: 24px 24px 0 0; padding: 24px 24px 40px;
+            max-height: 90vh; overflow-y: auto;
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .modal-close {
-            background: var(--tag-bg);
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-size: 14px;
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 18px; font-weight: 600; }
+        .modal-close { background: var(--tag-bg); border: none; width: 32px; height: 32px; border-radius: 50%; color: var(--text-muted); cursor: pointer; }
+        
         .form-group { margin-bottom: 20px; }
-
-        .form-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-muted);
-            margin-bottom: 12px;
+        .form-label { display: block; font-size: 14px; font-weight: 500; color: var(--text-muted); margin-bottom: 10px; }
+        .form-input, .form-textarea {
+            width: 100%; padding: 14px; background: var(--card-bg); color: var(--text-main);
+            border: none; border-radius: 12px; font-size: 15px; outline: none;
+        }
+        .form-textarea { height: 90px; resize: none; }
+        .btn-submit {
+            width: 100%; background: var(--text-main); color: #FFF; padding: 16px;
+            border: none; border-radius: var(--radius-pill); font-size: 16px; font-weight: 600; cursor: pointer;
         }
 
-        .category-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
+        /* 分类选择网格 */
+        .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .category-item {
-            background: var(--card-bg);
-            padding: 12px;
-            border-radius: var(--radius-lg);
-            text-align: center;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-muted);
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            border: 2px solid transparent;
-            transition: all 0.2s;
+            background: var(--card-bg); padding: 12px; border-radius: var(--radius-lg); text-align: center;
+            font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; gap: 6px; border: 2px solid transparent;
         }
-
-        .category-item.selected {
-            border-color: var(--accent-yellow);
-            background: #FFFAF0;
-            color: var(--text-main);
-        }
-
+        .category-item.selected { border-color: var(--accent-yellow); color: var(--text-main); }
         .category-item span:first-child { font-size: 24px; }
 
-        .form-input, .form-textarea {
-            width: 100%;
-            padding: 16px;
-            background: var(--card-bg);
-            color: var(--text-main);
-            border: none;
-            border-radius: var(--radius-lg);
-            font-size: 15px;
-            outline: none;
+        /* 标签管理列表 */
+        .tag-manage-list { display: flex; flex-direction: column; gap: 10px; }
+        .tag-manage-item {
+            display: flex; align-items: center; justify-content: space-between; background: var(--card-bg);
+            padding: 10px 16px; border-radius: 12px;
         }
-        
-        .form-input::placeholder, .form-textarea::placeholder {
-            color: #C7C7CC;
+        .tag-manage-info { display: flex; align-items: center; gap: 12px; font-weight: 500; }
+        .tag-manage-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;}
+        .tag-manage-actions { display: flex; gap: 8px; }
+        .icon-btn { background: var(--tag-bg); border: none; width: 30px; height: 30px; border-radius: 8px; color: var(--text-main); cursor: pointer; }
+
+        /* 颜色选择器 */
+        .color-picker { display: flex; gap: 10px; flex-wrap: wrap; }
+        .color-swatch {
+            width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+            border: 2px solid transparent; transition: all 0.2s;
         }
+        .color-swatch.selected { border-color: var(--text-main); transform: scale(1.1); }
 
-        .form-textarea { height: 100px; resize: none; }
-
-        .btn-submit {
-            width: 100%;
-            background: var(--text-main);
-            color: #FFF;
-            padding: 16px;
-            border: none;
-            border-radius: var(--radius-pill);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .data-tools {
-            text-align: center;
-            margin-top: 40px;
-            font-size: 12px;
-            color: #C7C7CC;
-        }
-
-        .data-tools span { cursor: pointer; margin: 0 10px; }
-        
-        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-        .empty-icon { font-size: 40px; margin-bottom: 16px; }
-
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .data-tools { text-align: center; margin-top: 30px; font-size: 12px; color: #C7C7CC; }
     </style>
 </head>
 <body>
 
-    <!-- 模仿参考图的头部 -->
     <div class="header">
         <div class="header-top">
             <div class="user-profile">
-                <div class="avatar">🐶</div>
+                <!-- 头像上传 -->
+                <label class="avatar-container" title="点击修改头像">
+                    <div class="avatar" id="avatarPreview">🐶</div>
+                    <div class="avatar-hint">📷</div>
+                    <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+                </label>
                 <div class="greeting-text">
                     <span class="greeting" id="greetingMsg">Good morning</span>
-                    <input type="text" id="petName" class="pet-name-input" value="Emma 🌟" onblur="savePetName()">
-                </div>
-            </div>
-            <div class="bell-icon">🔔</div>
-        </div>
-        <div class="slogan">记录狗狗的<br>每一天</div>
-    </div>
-
-    <!-- 胶囊筛选栏 -->
-    <div class="filter-section" id="filterSection">
-        <div class="filter-tag active" data-type="all">全部</div>
-        <div class="filter-tag" data-type="生病">生病</div>
-        <div class="filter-tag" data-type="洗澡">洗澡</div>
-        <div class="filter-tag" data-type="驱虫">驱虫</div>
-        <div class="filter-tag" data-type="出去玩">出去玩</div>
-        <div class="filter-tag" data-type="饮食">饮食</div>
-        <div class="filter-tag" data-type="其它">其它</div>
-    </div>
-
-    <!-- 列表展示区 -->
-    <div class="container" id="recordsContainer"></div>
-
-    <!-- 悬浮添加按钮 (居中) -->
-    <div class="fab-container">
-        <button class="fab" onclick="openModal()">+</button>
-    </div>
-
-    <!-- 底部弹窗 -->
-    <div class="modal-overlay" id="modalOverlay">
-        <div class="modal-card">
-            <div class="modal-header">
-                <div class="modal-title" id="modalTitle">新增记录</div>
-                <button class="modal-close" onclick="closeModal()">✕</button>
-            </div>
-            <form id="recordForm" onsubmit="handleFormSubmit(event)">
-                <input type="hidden" id="recordId">
-                
-                <div class="form-group">
-                    <label class="form-label">类别</label>
-                    <div class="category-grid" id="categoryGrid">
-                        <div class="category-item selected" data-type="生病" data-bg="bg-sick">
-                            <span>🏥</span><span>生病</span>
-                        </div>
-                        <div class="category-item" data-type="洗澡" data-bg="bg-bath">
-                            <span>🛁</span><span>洗澡</span>
-                        </div>
-                        <div class="category-item" data-type="驱虫" data-bg="bg-deworm">
-                            <span>💊</span><span>驱虫</span>
-                        </div>
-                        <div class="category-item" data-type="出去玩" data-bg="bg-play">
-                            <span>🎾</span><span>出去玩</span>
-                        </div>
-                        <div class="category-item" data-type="饮食" data-bg="bg-food">
-                            <span>🍖</span><span>饮食</span>
-                        </div>
-                        <div class="category-item" data-type="其它" data-bg="bg-other">
-                            <span>📝</span><span>其它</span>
-                        </div>
+                    <!-- 狗狗名字修改 -->
+                    <div class="name-wrapper">
+                        <input type="text" id="petName" class="pet-name-input" value="Emma" onblur="saveSettings()" placeholder="输入名字" title="点击修改名字">
                     </div>
                 </div>
+            </div>
+        </div>
+        <!-- 标语修改 -->
+        <input type="text" id="slogan" class="slogan-input" value="记录狗狗的每一天" maxlength="15" onblur="saveSettings()" placeholder="一句话记录" title="点击修改标语">
+    </div>
 
+    <!-- 动态分类标签 -->
+    <div class="filter-section" id="filterTagsContainer">
+        <!-- JS 渲染 -->
+    </div>
+
+    <!-- 列表顶部栏：所有记录 + 时间筛选 (按月) -->
+    <div class="list-header-bar">
+        <div class="list-header-title" id="listTitle">所有记录</div>
+        <div class="date-filter-wrapper">
+            <!-- 变更为 month，精确到年月 -->
+            <input type="month" id="dateFilter" class="date-filter-input" onchange="renderRecords()">
+            <button class="date-clear-btn" id="clearDateBtn" onclick="clearDateFilter()" title="清除日期">✕</button>
+        </div>
+    </div>
+
+    <div class="container" id="recordsContainer"></div>
+
+    <div class="fab-container">
+        <button class="fab" onclick="openRecordModal()">+</button>
+    </div>
+
+    <!-- 记录添加/编辑弹窗 -->
+    <div class="modal-overlay" id="recordModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title" id="recordModalTitle">新增记录</div>
+                <button class="modal-close" onclick="closeModal('recordModal')">✕</button>
+            </div>
+            <form id="recordForm" onsubmit="handleRecordSubmit(event)">
+                <input type="hidden" id="recordId">
                 <div class="form-group">
-                    <label class="form-label">时间</label>
-                    <input type="datetime-local" id="recordTime" class="form-input" required>
+                    <label class="form-label">类别</label>
+                    <div class="category-grid" id="recordCategoryGrid"></div>
                 </div>
-
+                <div class="form-group">
+                    <label class="form-label">日期</label>
+                    <input type="date" id="recordTime" class="form-input" required>
+                </div>
                 <div class="form-group">
                     <label class="form-label">详情</label>
                     <textarea id="recordDetail" class="form-textarea" placeholder="写下今天发生的事情..." required></textarea>
                 </div>
-
                 <button type="submit" class="btn-submit">保存</button>
             </form>
         </div>
     </div>
 
-    <!-- 数据备份 -->
+    <!-- 标签管理弹窗 -->
+    <div class="modal-overlay" id="tagManagerModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">管理分类标签</div>
+                <button class="modal-close" onclick="closeModal('tagManagerModal'); renderApp();">✕</button>
+            </div>
+            <div class="tag-manage-list" id="tagManageList"></div>
+            <button class="btn-submit" style="margin-top:20px; background:var(--tag-bg); color:var(--text-main);" onclick="openTagEditModal()">+ 添加新分类</button>
+        </div>
+    </div>
+
+    <!-- 单个标签编辑弹窗 -->
+    <div class="modal-overlay" id="tagEditModal" style="z-index: 1100;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title" id="tagEditTitle">添加分类</div>
+                <button class="modal-close" onclick="closeModal('tagEditModal')">✕</button>
+            </div>
+            <form id="tagForm" onsubmit="handleTagSubmit(event)">
+                <input type="hidden" id="tagEditId">
+                <div class="form-group">
+                    <label class="form-label">名称 (如: 洗澡)</label>
+                    <input type="text" id="tagName" class="form-input" required maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Emoji 图标</label>
+                    <input type="text" id="tagEmoji" class="form-input" required maxlength="2" placeholder="🐶">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">背景颜色</label>
+                    <div class="color-picker" id="colorPicker">
+                        <div class="color-swatch" style="background:#FFE8E8" data-color="#FFE8E8"></div>
+                        <div class="color-swatch" style="background:#E8F4FF" data-color="#E8F4FF"></div>
+                        <div class="color-swatch" style="background:#EAF6E3" data-color="#EAF6E3"></div>
+                        <div class="color-swatch" style="background:#FFF4D4" data-color="#FFF4D4"></div>
+                        <div class="color-swatch" style="background:#F3E8FF" data-color="#F3E8FF"></div>
+                        <div class="color-swatch" style="background:#F2F2F7" data-color="#F2F2F7"></div>
+                        <div class="color-swatch" style="background:#FFE0B2" data-color="#FFE0B2"></div>
+                        <div class="color-swatch" style="background:#D1C4E9" data-color="#D1C4E9"></div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit">保存标签</button>
+            </form>
+        </div>
+    </div>
+
     <div class="data-tools">
-        <span onclick="exportData()">导出数据</span> | 
-        <span onclick="importData()">恢复数据</span>
+        <span onclick="exportData()" style="cursor:pointer">导出数据</span> | 
+        <span onclick="document.getElementById('importFileInput').click()" style="cursor:pointer">恢复数据</span>
         <input type="file" id="importFileInput" style="display:none" accept=".json" onchange="handleFileImport(event)">
     </div>
 
     <script>
-        const CATEGORIES = {
-            '生病': { icon: '🏥', bg: 'bg-sick' },
-            '洗澡': { icon: '🛁', bg: 'bg-bath' },
-            '驱虫': { icon: '💊', bg: 'bg-deworm' },
-            '出去玩': { icon: '🎾', bg: 'bg-play' },
-            '饮食': { icon: '🍖', bg: 'bg-food' },
-            '其它': { icon: '📝', bg: 'bg-other' }
-        };
+        // 默认类别配置
+        const DEFAULT_CATEGORIES = [
+            { id: 'c1', name: '生病', emoji: '🏥', color: '#FFE8E8' },
+            { id: 'c2', name: '洗澡', emoji: '🛁', color: '#E8F4FF' },
+            { id: 'c3', name: '驱虫', emoji: '💊', color: '#EAF6E3' },
+            { id: 'c4', name: '出去玩', emoji: '🎾', color: '#FFF4D4' },
+            { id: 'c5', name: '饮食', emoji: '🍖', color: '#F3E8FF' },
+            { id: 'c6', name: '其它', emoji: '📝', color: '#F2F2F7' }
+        ];
 
         let records = [];
+        let categories = [];
         let currentFilter = 'all';
-        let selectedCategory = '生病';
+        let selectedRecordCategory = '';
+        let selectedTagColor = '#FFE8E8';
 
+        function getTodayString() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // 初始化
         window.onload = function() {
             setGreeting();
-            loadPetName();
-            loadRecords();
-            initCategoryPicker();
-            initFilter();
-            render();
+            loadSettings();
+            
+            // 默认清空日期筛选器，展示所有记录
+            document.getElementById('dateFilter').value = '';
+            
+            renderApp();
+            initColorPicker();
         };
 
-        // 根据时间设置问候语
         function setGreeting() {
             const hour = new Date().getHours();
-            let msg = 'Good evening';
-            if (hour < 12) msg = 'Good morning';
-            else if (hour < 18) msg = 'Good afternoon';
-            document.getElementById('greetingMsg').innerText = msg;
+            document.getElementById('greetingMsg').innerText = hour < 12 ? 'Good morning' : (hour < 18 ? 'Good afternoon' : 'Good evening');
         }
 
-        function loadPetName() {
-            const savedName = localStorage.getItem('dog_pet_name_v3');
+        // --- 数据加载与保存 ---
+        function loadSettings() {
+            const savedName = localStorage.getItem('dog_name');
             if (savedName) document.getElementById('petName').value = savedName;
-        }
-
-        function savePetName() {
-            const name = document.getElementById('petName').value.trim();
-            if (name) localStorage.setItem('dog_pet_name_v3', name);
-        }
-
-        function loadRecords() {
-            const data = localStorage.getItem('dog_daily_records');
-            if (data) {
-                records = JSON.parse(data);
-            } else {
-                const now = new Date();
-                records = [
-                    { id: '1', type: '出去玩', time: new Date(now.getTime() - 86400000 * 1).toISOString().slice(0, 16), detail: '去了家附近的草地跑酷，认识了一只小金毛。' },
-                    { id: '2', type: '洗澡', time: new Date(now.getTime() - 86400000 * 5).toISOString().slice(0, 16), detail: '在家自己洗的，吹毛吹了半个小时，很乖。' }
-                ];
-                saveRecords();
+            
+            const savedSlogan = localStorage.getItem('dog_slogan');
+            if (savedSlogan) {
+                document.getElementById('slogan').value = savedSlogan;
             }
+            
+            // 将网页Title设置为当前的slogan，如果为空则使用默认值
+            document.title = document.getElementById('slogan').value.trim() || '狗狗日常记录';
+
+            const savedAvatar = localStorage.getItem('dog_avatar');
+            if (savedAvatar) {
+                document.getElementById('avatarPreview').innerHTML = `<img src="${savedAvatar}" alt="avatar">`;
+            }
+
+            const savedCategories = localStorage.getItem('dog_categories');
+            categories = savedCategories ? JSON.parse(savedCategories) : JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+
+            const savedRecords = localStorage.getItem('dog_records');
+            records = savedRecords ? JSON.parse(savedRecords) : [];
+        }
+
+        function saveSettings() {
+            const petName = document.getElementById('petName').value.trim();
+            const slogan = document.getElementById('slogan').value.trim();
+            
+            localStorage.setItem('dog_name', petName);
+            localStorage.setItem('dog_slogan', slogan);
+            
+            // 实时更新网页Title
+            document.title = slogan || '狗狗日常记录';
+        }
+
+        function saveCategories() {
+            localStorage.setItem('dog_categories', JSON.stringify(categories));
         }
 
         function saveRecords() {
-            localStorage.setItem('dog_daily_records', JSON.stringify(records));
+            localStorage.setItem('dog_records', JSON.stringify(records));
         }
 
-        function render() {
+        function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Img = e.target.result;
+                    document.getElementById('avatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
+                    localStorage.setItem('dog_avatar', base64Img);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // --- 核心渲染逻辑 ---
+        function renderApp() {
+            renderFilterTags();
+            renderRecords();
+        }
+
+        function renderFilterTags() {
+            const container = document.getElementById('filterTagsContainer');
+            let html = `<button class="filter-tag ${currentFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">全部</button>`;
+            
+            categories.forEach(cat => {
+                html += `<button class="filter-tag ${currentFilter === cat.id ? 'active' : ''}" onclick="setFilter('${cat.id}')">${cat.name}</button>`;
+            });
+            
+            // 添加 ➕ 号按钮管理分类
+            html += `<button class="filter-tag" style="font-weight:bold; padding: 8px 12px;" onclick="openTagManager()">➕</button>`;
+            
+            container.innerHTML = html;
+        }
+
+        function setFilter(catId) {
+            currentFilter = catId;
+            renderFilterTags();
+            renderRecords();
+        }
+        
+        function clearDateFilter() {
+            document.getElementById('dateFilter').value = '';
+            renderRecords();
+        }
+
+        function renderRecords() {
             const container = document.getElementById('recordsContainer');
-            container.innerHTML = '';
-            let filtered = currentFilter !== 'all' ? records.filter(r => r.type === currentFilter) : records;
+            const dateFilter = document.getElementById('dateFilter').value; // YYYY-MM
+            const clearBtn = document.getElementById('clearDateBtn');
+            const listTitle = document.getElementById('listTitle');
+            
+            let filtered = records;
+            
+            // 分类过滤
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(r => r.categoryId === currentFilter);
+            }
+            
+            // 时间过滤及标题更新 (按月筛选)
+            if (dateFilter) {
+                clearBtn.style.display = 'block';
+                const parts = dateFilter.split('-');
+                listTitle.innerText = `${parts[0]}年${parseInt(parts[1])}月`;
+                
+                filtered = filtered.filter(r => {
+                    const recordMonth = r.time.substring(0, 7); // 提取 YYYY-MM
+                    return recordMonth === dateFilter;
+                });
+            } else {
+                clearBtn.style.display = 'none';
+                listTitle.innerText = '所有记录';
+            }
+
             filtered.sort((a, b) => new Date(b.time) - new Date(a.time));
 
             if (filtered.length === 0) {
-                container.innerHTML = `<div class="empty-state"><div class="empty-icon">🍃</div><p>还没有相关的记录哦</p></div>`;
+                container.innerHTML = `<div class="empty-state">🍃<br><br>没有找到相关记录哦，快去记一笔吧！</div>`;
                 return;
             }
 
+            container.innerHTML = '';
             const groups = {};
             filtered.forEach(item => {
-                const d = new Date(item.time);
-                const k = `${d.getFullYear()}年 ${String(d.getMonth() + 1)}月`;
+                const datePart = item.time.substring(0, 10);
+                const [year, month, day] = datePart.split('-');
+                const k = `${year}年 ${parseInt(month)}月`;
                 if (!groups[k]) groups[k] = [];
                 groups[k].push(item);
             });
 
             for (const k in groups) {
                 const g = document.createElement('div');
-                g.innerHTML = `<div class="month-header"><span>${k}</span><span class="month-count">${groups[k].length} 项记录</span></div>`;
+                // 仅在显示"所有记录"时显示月份分组表头
+                if (!dateFilter) {
+                    g.innerHTML = `<div class="month-header"><span>${k}</span><span class="month-count">${groups[k].length} 项记录</span></div>`;
+                }
                 
                 groups[k].forEach(item => {
-                    const cat = CATEGORIES[item.type] || CATEGORIES['其它'];
+                    const cat = categories.find(c => c.id === item.categoryId) || { name: '未知', emoji: '📝', color: '#F2F2F7' };
+                    
+                    const datePart = item.time.substring(0, 10);
+                    const [year, month, day] = datePart.split('-');
+                    const timeStr = `${month}/${day}`;
+                    
                     const card = document.createElement('div');
                     card.className = 'record-card';
                     card.innerHTML = `
-                        <div class="record-icon ${cat.bg}">${cat.icon}</div>
+                        <div class="record-icon" style="background-color: ${cat.color}">${cat.emoji}</div>
                         <div class="record-content">
                             <div class="record-top">
-                                <div class="record-title">${item.type}</div>
-                                <div class="record-time">${formatTimeDisplay(item.time)}</div>
+                                <div class="record-title">${cat.name}</div>
+                                <div class="record-time">${timeStr}</div>
                             </div>
-                            <div class="record-detail">${escapeHtml(item.detail)}</div>
+                            <div class="record-detail">${item.detail.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</div>
                             <div class="record-actions">
-                                <button class="action-btn" onclick="editRecord('${item.id}')">编辑</button>
+                                <button class="action-btn" onclick="openRecordModal('${item.id}')">编辑</button>
                                 <button class="action-btn" onclick="deleteRecord('${item.id}')" style="color:#FF5C5C">删除</button>
                             </div>
                         </div>
@@ -606,98 +554,197 @@
             }
         }
 
-        function formatTimeDisplay(timeStr) {
-            const d = new Date(timeStr);
-            return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        }
+        // --- 记录操作 Modal ---
+        function openRecordModal(editId = null) {
+            const modal = document.getElementById('recordModal');
+            const grid = document.getElementById('recordCategoryGrid');
+            
+            grid.innerHTML = categories.map(cat => `
+                <div class="category-item" id="cat-select-${cat.id}" data-id="${cat.id}" style="background-color: ${cat.color}33;" onclick="selectRecordCategory('${cat.id}')">
+                    <span>${cat.emoji}</span><span>${cat.name}</span>
+                </div>
+            `).join('');
 
-        function escapeHtml(str) { return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-
-        function initCategoryPicker() {
-            const items = document.querySelectorAll('.category-item');
-            items.forEach(item => {
-                item.addEventListener('click', function() {
-                    items.forEach(i => i.classList.remove('selected'));
-                    this.classList.add('selected');
-                    selectedCategory = this.getAttribute('data-type');
-                });
-            });
-        }
-
-        function initFilter() {
-            const tags = document.querySelectorAll('.filter-tag');
-            tags.forEach(tag => {
-                tag.addEventListener('click', function() {
-                    tags.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    currentFilter = this.getAttribute('data-type');
-                    render();
-                });
-            });
-        }
-
-        function openModal(editId = null) {
-            const modal = document.getElementById('modalOverlay');
             if (editId) {
                 const item = records.find(r => r.id === editId);
                 if (item) {
-                    document.getElementById('modalTitle').innerText = '修改记录';
+                    document.getElementById('recordModalTitle').innerText = '修改记录';
                     document.getElementById('recordId').value = item.id;
-                    document.getElementById('recordTime').value = item.time;
+                    document.getElementById('recordTime').value = item.time.substring(0, 10);
                     document.getElementById('recordDetail').value = item.detail;
-                    selectedCategory = item.type;
-                    document.querySelectorAll('.category-item').forEach(i => {
-                        i.classList.toggle('selected', i.getAttribute('data-type') === item.type);
-                    });
+                    selectRecordCategory(item.categoryId);
                 }
             } else {
-                document.getElementById('modalTitle').innerText = '新增记录';
+                document.getElementById('recordModalTitle').innerText = '新增记录';
                 document.getElementById('recordForm').reset();
                 document.getElementById('recordId').value = '';
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                document.getElementById('recordTime').value = now.toISOString().slice(0, 16);
+                
+                // 默认日期为今天
+                document.getElementById('recordTime').value = getTodayString();
+                if(categories.length > 0) selectRecordCategory(categories[0].id);
             }
             modal.classList.add('active');
         }
 
-        function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+        function selectRecordCategory(id) {
+            selectedRecordCategory = id;
+            document.querySelectorAll('#recordCategoryGrid .category-item').forEach(el => {
+                if (el.getAttribute('data-id') === id) {
+                    el.style.borderColor = 'var(--text-main)';
+                    el.style.backgroundColor = 'var(--card-bg)';
+                } else {
+                    el.style.borderColor = 'transparent';
+                    const cat = categories.find(c => c.id === el.getAttribute('data-id'));
+                    if(cat) el.style.backgroundColor = cat.color;
+                }
+            });
+        }
 
-        function handleFormSubmit(e) {
+        function handleRecordSubmit(e) {
             e.preventDefault();
+            if (!selectedRecordCategory) return alert('请选择一个类别');
             const id = document.getElementById('recordId').value;
-            const time = document.getElementById('recordTime').value;
+            const time = document.getElementById('recordTime').value; 
             const detail = document.getElementById('recordDetail').value.trim();
+            
             if (id) {
                 const index = records.findIndex(r => r.id === id);
-                if (index !== -1) records[index] = { id, type: selectedCategory, time, detail };
+                if (index !== -1) records[index] = { id, categoryId: selectedRecordCategory, time, detail };
             } else {
-                records.push({ id: Date.now().toString(), type: selectedCategory, time, detail });
+                records.push({ id: Date.now().toString(), categoryId: selectedRecordCategory, time, detail });
             }
             saveRecords();
-            render();
-            closeModal();
+            renderRecords();
+            closeModal('recordModal');
         }
 
-        function editRecord(id) { openModal(id); }
         function deleteRecord(id) {
-            if (confirm('确定要删除这条记录吗？')) {
+            if (confirm('确定删除这条记录？')) {
                 records = records.filter(r => r.id !== id);
                 saveRecords();
-                render();
+                renderRecords();
             }
         }
 
+        // --- 分类标签管理 ---
+        function openTagManager() {
+            document.getElementById('tagManagerModal').classList.add('active');
+            renderTagManagerList();
+        }
+
+        function renderTagManagerList() {
+            const list = document.getElementById('tagManageList');
+            list.innerHTML = categories.map((cat, index) => `
+                <div class="tag-manage-item">
+                    <div class="tag-manage-info">
+                        <div class="tag-manage-icon" style="background-color: ${cat.color}">${cat.emoji}</div>
+                        <span>${cat.name}</span>
+                    </div>
+                    <div class="tag-manage-actions">
+                        <button class="icon-btn" onclick="moveTag(${index}, -1)" ${index === 0 ? 'disabled style="opacity:0.3"' : ''}>⬆️</button>
+                        <button class="icon-btn" onclick="moveTag(${index}, 1)" ${index === categories.length - 1 ? 'disabled style="opacity:0.3"' : ''}>⬇️</button>
+                        <button class="icon-btn" onclick="openTagEditModal('${cat.id}')">✏️</button>
+                        <button class="icon-btn" onclick="deleteTag('${cat.id}')" style="color:#FF5C5C">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function moveTag(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= categories.length) return;
+            const temp = categories[index];
+            categories[index] = categories[newIndex];
+            categories[newIndex] = temp;
+            saveCategories();
+            renderTagManagerList();
+        }
+
+        function deleteTag(id) {
+            if(categories.length <= 1) return alert("至少保留一个分类哦！");
+            if(records.some(r => r.categoryId === id)) {
+                if(!confirm('有记录正在使用此分类，删除后这些记录的分类会显示为空。确认删除？')) return;
+            } else {
+                if(!confirm('确定删除此分类？')) return;
+            }
+            categories = categories.filter(c => c.id !== id);
+            if(currentFilter === id) currentFilter = 'all';
+            saveCategories();
+            renderTagManagerList();
+        }
+
+        function initColorPicker() {
+            document.querySelectorAll('.color-swatch').forEach(swatch => {
+                swatch.addEventListener('click', function() {
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedTagColor = this.getAttribute('data-color');
+                });
+            });
+        }
+
+        function openTagEditModal(id = null) {
+            const modal = document.getElementById('tagEditModal');
+            if (id) {
+                const cat = categories.find(c => c.id === id);
+                document.getElementById('tagEditTitle').innerText = '修改分类';
+                document.getElementById('tagEditId').value = cat.id;
+                document.getElementById('tagName').value = cat.name;
+                document.getElementById('tagEmoji').value = cat.emoji;
+                setPickerColor(cat.color);
+            } else {
+                document.getElementById('tagEditTitle').innerText = '添加新分类';
+                document.getElementById('tagForm').reset();
+                document.getElementById('tagEditId').value = '';
+                setPickerColor('#FFE8E8');
+            }
+            modal.classList.add('active');
+        }
+
+        function setPickerColor(color) {
+            selectedTagColor = color;
+            document.querySelectorAll('.color-swatch').forEach(s => {
+                if(s.getAttribute('data-color') === color) s.classList.add('selected');
+                else s.classList.remove('selected');
+            });
+        }
+
+        function handleTagSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('tagEditId').value;
+            const name = document.getElementById('tagName').value.trim();
+            const emoji = document.getElementById('tagEmoji').value.trim();
+            
+            if (id) {
+                const index = categories.findIndex(c => c.id === id);
+                if (index !== -1) categories[index] = { id, name, emoji, color: selectedTagColor };
+            } else {
+                categories.push({ id: 'cat_' + Date.now(), name, emoji, color: selectedTagColor });
+            }
+            saveCategories();
+            renderTagManagerList();
+            closeModal('tagEditModal');
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
         function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records, null, 2));
+            const data = {
+                name: localStorage.getItem('dog_name'),
+                slogan: localStorage.getItem('dog_slogan'),
+                avatar: localStorage.getItem('dog_avatar'),
+                categories: categories,
+                records: records
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             const a = document.createElement('a');
             a.href = dataStr;
-            a.download = `狗狗记录_${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `狗狗日记备份_${new Date().toISOString().slice(0,10)}.json`;
             document.body.appendChild(a);
             a.click();
             a.remove();
         }
-        function importData() { document.getElementById('importFileInput').click(); }
+
         function handleFileImport(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -705,13 +752,19 @@
             reader.onload = function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    if (Array.isArray(imported)) {
-                        records = imported;
+                    if (imported.records && Array.isArray(imported.categories)) {
+                        if(imported.name) localStorage.setItem('dog_name', imported.name);
+                        if(imported.slogan) localStorage.setItem('dog_slogan', imported.slogan);
+                        if(imported.avatar) localStorage.setItem('dog_avatar', imported.avatar);
+                        categories = imported.categories;
+                        records = imported.records;
+                        saveCategories();
                         saveRecords();
-                        render();
+                        loadSettings();
+                        renderApp();
                         alert('数据导入成功！');
-                    } else alert('数据格式不正确哦');
-                } catch (err) { alert('读取失败，请确认文件正确'); }
+                    } else alert('数据格式不正确');
+                } catch (err) { alert('读取失败，请确认文件'); }
             };
             reader.readAsText(file);
         }
