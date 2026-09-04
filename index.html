@@ -81,7 +81,7 @@
 
         /* 身体数据栏 */
         .body-stats-wrapper {
-            display: flex; gap: 12px; font-size: 14px; color: var(--text-muted);
+            display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-muted);
             margin-top: 4px; cursor: pointer; border-bottom: 1px dashed transparent;
             transition: border-color 0.2s; padding-bottom: 2px; width: fit-content;
         }
@@ -236,7 +236,7 @@
         .category-item.selected { border-color: var(--accent-yellow); color: var(--text-main); }
         .category-item span:first-child { font-size: 24px; }
 
-        /* 标签管理列表 */
+        /* 列表容器 */
         .tag-manage-list { display: flex; flex-direction: column; gap: 10px; }
         .tag-manage-item {
             display: flex; align-items: center; justify-content: space-between; background: var(--card-bg);
@@ -279,8 +279,9 @@
                     <!-- 身体数据修改 -->
                     <div class="body-stats-wrapper" onclick="openStatsModal()" title="点击修改身体数据">
                         <span>体重: <b id="displayWeight">--</b> kg</span>
-                        <span>颈围: <b id="displayNeck">--</b> cm</span>
                         <span>胸围: <b id="displayChest">--</b> cm</span>
+                        <span>颈围: <b id="displayNeck">--</b> cm</span>
+                        <span>身长: <b id="displayLength">--</b> cm</span>
                     </div>
                 </div>
             </div>
@@ -345,18 +346,22 @@
             </div>
             <form id="statsForm" onsubmit="handleStatsSubmit(event)">
                 <input type="hidden" id="statId">
-                <div class="category-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                <div class="category-grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label">体重(kg)</label>
                         <input type="number" step="0.1" id="statInputWeight" class="form-input" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">胸围(cm)</label>
+                        <input type="number" step="0.1" id="statInputChest" class="form-input" required>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label">颈围(cm)</label>
                         <input type="number" step="0.1" id="statInputNeck" class="form-input" required>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label">胸围(cm)</label>
-                        <input type="number" step="0.1" id="statInputChest" class="form-input" required>
+                        <label class="form-label">身长(cm)</label>
+                        <input type="number" step="0.1" id="statInputLength" class="form-input" required>
                     </div>
                 </div>
                 <div class="form-group" style="margin-top:16px;">
@@ -441,7 +446,7 @@
         let currentFilter = 'all';
         let selectedRecordCategory = '';
         let selectedTagColor = '#FFE8E8';
-        let sortableInstances = []; // 存储所有Sortable实例，方便销毁重建
+        let sortableInstances = [];
 
         function getTodayString() {
             const d = new Date();
@@ -543,14 +548,16 @@
         function renderLatestBodyStats() {
             if (bodyStats.length === 0) {
                 document.getElementById('displayWeight').innerText = '--';
-                document.getElementById('displayNeck').innerText = '--';
                 document.getElementById('displayChest').innerText = '--';
+                document.getElementById('displayNeck').innerText = '--';
+                document.getElementById('displayLength').innerText = '--';
                 return;
             }
             const latest = [...bodyStats].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-            document.getElementById('displayWeight').innerText = latest.weight;
-            document.getElementById('displayNeck').innerText = latest.neck;
-            document.getElementById('displayChest').innerText = latest.chest;
+            document.getElementById('displayWeight').innerText = latest.weight || '--';
+            document.getElementById('displayChest').innerText = latest.chest || '--';
+            document.getElementById('displayNeck').innerText = latest.neck || '--';
+            document.getElementById('displayLength').innerText = latest.length || '--';
         }
 
         function openStatsModal(editId = null) {
@@ -559,9 +566,10 @@
                 const stat = bodyStats.find(s => s.id === editId);
                 if (stat) {
                     document.getElementById('statId').value = stat.id;
-                    document.getElementById('statInputWeight').value = stat.weight;
-                    document.getElementById('statInputNeck').value = stat.neck;
-                    document.getElementById('statInputChest').value = stat.chest;
+                    document.getElementById('statInputWeight').value = stat.weight || '';
+                    document.getElementById('statInputChest').value = stat.chest || '';
+                    document.getElementById('statInputNeck').value = stat.neck || '';
+                    document.getElementById('statInputLength').value = stat.length || '';
                     document.getElementById('statInputDate').value = stat.date;
                 }
             } else {
@@ -571,9 +579,10 @@
                 
                 if (bodyStats.length > 0) {
                     const latest = [...bodyStats].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-                    document.getElementById('statInputWeight').value = latest.weight;
-                    document.getElementById('statInputNeck').value = latest.neck;
-                    document.getElementById('statInputChest').value = latest.chest;
+                    document.getElementById('statInputWeight').value = latest.weight || '';
+                    document.getElementById('statInputChest').value = latest.chest || '';
+                    document.getElementById('statInputNeck').value = latest.neck || '';
+                    document.getElementById('statInputLength').value = latest.length || '';
                 }
             }
             renderStatsHistoryList();
@@ -584,15 +593,16 @@
             e.preventDefault();
             const id = document.getElementById('statId').value;
             const weight = document.getElementById('statInputWeight').value;
-            const neck = document.getElementById('statInputNeck').value;
             const chest = document.getElementById('statInputChest').value;
+            const neck = document.getElementById('statInputNeck').value;
+            const length = document.getElementById('statInputLength').value;
             const date = document.getElementById('statInputDate').value;
             
             if (id) {
                 const index = bodyStats.findIndex(s => s.id === id);
-                if (index !== -1) bodyStats[index] = { id, weight, neck, chest, date };
+                if (index !== -1) bodyStats[index] = { id, weight, chest, neck, length, date };
             } else {
-                bodyStats.push({ id: 'stat_' + Date.now(), weight, neck, chest, date });
+                bodyStats.push({ id: 'stat_' + Date.now(), weight, chest, neck, length, date });
             }
             
             saveBodyStats();
@@ -621,10 +631,11 @@
                             <button type="button" class="icon-btn" onclick="deleteStat('${stat.id}')" style="color:#FF5C5C">🗑️</button>
                         </div>
                     </div>
-                    <div style="display:flex; gap:16px; font-size:13px; color:var(--text-muted);">
-                        <span>⚖️ 体重: <b style="color:var(--text-main)">${stat.weight}</b>kg</span>
-                        <span>🧣 颈围: <b style="color:var(--text-main)">${stat.neck}</b>cm</span>
-                        <span>🎽 胸围: <b style="color:var(--text-main)">${stat.chest}</b>cm</span>
+                    <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:13px; color:var(--text-muted);">
+                        <span>体重: <b style="color:var(--text-main)">${stat.weight || '--'}</b>kg</span>
+                        <span>胸围: <b style="color:var(--text-main)">${stat.chest || '--'}</b>cm</span>
+                        <span>颈围: <b style="color:var(--text-main)">${stat.neck || '--'}</b>cm</span>
+                        <span>身长: <b style="color:var(--text-main)">${stat.length || '--'}</b>cm</span>
                     </div>
                 </div>
             `).join('');
@@ -718,7 +729,7 @@
             sortableInstances = [];
 
             const groups = {};
-            // 在此修改分组逻辑：按照“具体到天”进行分组，以便在同一天内进行拖拽
+            // 按照“具体到天”进行分组，以便在同一天内进行拖拽
             filtered.forEach(item => {
                 const datePart = item.time.substring(0, 10);
                 if (!groups[datePart]) groups[datePart] = [];
