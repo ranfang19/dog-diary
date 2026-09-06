@@ -501,6 +501,28 @@
             { id: 'c7', name: '便便', emoji: '💩', color: '#F0E2D0' }
         ];
 
+        // 分类迁移：不管数据是从本地、云同步、还是备份文件加载的，
+        // 都统一在这里检查有没有缺新分类 / 需不需要改名，缺就自动补上。
+        // 以后新增默认分类，在这个函数里照着样子加一段判断就行。
+        function migrateCategories() {
+            let changed = false;
+            categories.forEach(c => {
+                if (c.name === '生病') { c.name = '医院'; c.emoji = '🏥'; changed = true; }
+            });
+            if (!categories.some(c => c.name === '疫苗')) {
+                const targetIdx = categories.findIndex(c => c.name === '医院');
+                const newCat = { id: 'c6_' + Date.now(), name: '疫苗', emoji: '💉', color: '#D9F2ED' };
+                if (targetIdx !== -1) categories.splice(targetIdx + 1, 0, newCat);
+                else categories.push(newCat);
+                changed = true;
+            }
+            if (!categories.some(c => c.name === '便便')) {
+                categories.push({ id: 'c7_' + Date.now(), name: '便便', emoji: '💩', color: '#F0E2D0' });
+                changed = true;
+            }
+            return changed;
+        }
+
         let records = [];
         let categories = [];
         let bodyStats = [];
@@ -623,22 +645,7 @@
             const savedCategories = localStorage.getItem('dog_categories');
             if (savedCategories) {
                 categories = JSON.parse(savedCategories);
-                let changed = false;
-                categories.forEach(c => {
-                    if (c.name === '生病') { c.name = '医院'; c.emoji = '🏥'; changed = true; }
-                });
-                if (!categories.some(c => c.name === '疫苗')) {
-                    const targetIdx = categories.findIndex(c => c.name === '医院');
-                    const newCat = { id: 'c6_' + Date.now(), name: '疫苗', emoji: '💉', color: '#D9F2ED' };
-                    if (targetIdx !== -1) categories.splice(targetIdx + 1, 0, newCat);
-                    else categories.push(newCat);
-                    changed = true;
-                }
-                if (!categories.some(c => c.name === '便便')) {
-                    categories.push({ id: 'c7_' + Date.now(), name: '便便', emoji: '💩', color: '#F0E2D0' });
-                    changed = true;
-                }
-                if (changed) saveCategories(false);
+                if (migrateCategories()) saveCategories(false);
             } else {
                 categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
             }
@@ -854,6 +861,7 @@
                         records = data.records || [];
                         bodyStats = data.bodyStats || [];
                         
+                        migrateCategories();
                         saveCategories(false);
                         saveRecords(false);
                         saveBodyStats(false);
@@ -1625,6 +1633,7 @@
                         categories = imported.categories;
                         records = imported.records;
                         bodyStats = imported.bodyStats || [];
+                        migrateCategories();
                         saveCategories(false);
                         saveRecords(false);
                         saveBodyStats(false);
