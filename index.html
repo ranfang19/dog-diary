@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>记录狗狗的每一天</title>
+    <title>小狗勾的记事本</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
@@ -39,6 +39,9 @@
         .name-wrapper { display: flex; align-items: center; }
         .pet-name-input { background: transparent; border: none; color: var(--text-main); font-size: 22px; font-weight: 700; outline: none; width: 140px; border-bottom: 1px dashed transparent; transition: border-color 0.2s; }
         .pet-name-input:focus, .pet-name-input:hover { border-bottom-color: var(--text-muted); }
+        .pet-age { font-size: 12px; font-weight: 600; color: var(--text-muted); background: var(--tag-bg); border-radius: var(--radius-pill); padding: 3px 10px; margin-left: 6px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+        .pet-age:empty { display: none; }
+        .pet-age.unset { background: transparent; border: 1px dashed #D1D1D6; color: #C7C7CC; }
 
         .body-stats-wrapper { display: flex; gap: 6px; font-size: 11px; color: var(--text-muted); margin-top: 4px; cursor: pointer; border-bottom: 1px dashed transparent; transition: border-color 0.2s; padding-bottom: 2px; width: 100%; white-space: nowrap; flex-wrap: nowrap; overflow: hidden; align-items: center; }
         .body-stats-wrapper:hover { border-bottom-color: var(--text-muted); }
@@ -121,6 +124,31 @@
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .data-tools { text-align: center; margin-top: 30px; font-size: 13px; color: #C7C7CC; font-weight: 500;}
         .data-tools span:hover { color: var(--text-main); }
+        .app-version { text-align: center; margin-top: 10px; font-size: 11px; color: #D1D1D6; cursor: pointer; }
+        .app-version:hover { color: var(--text-muted); text-decoration: underline; }
+
+        .changelog-list { display: flex; flex-direction: column; gap: 16px; }
+        .changelog-item { background: var(--card-bg); border-radius: var(--radius-lg); padding: 14px 16px; }
+        .changelog-item-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+        .changelog-version { font-size: 15px; font-weight: 700; color: var(--text-main); }
+        .changelog-date { font-size: 12px; color: var(--text-muted); }
+        .changelog-item ul { margin: 0; padding-left: 18px; }
+        .changelog-item li { font-size: 13.5px; color: var(--text-muted); line-height: 1.7; }
+
+        .birthdate-preview { background: linear-gradient(135deg, #FFF4D4, #FFE8E8); border-radius: var(--radius-lg); padding: 24px 16px; text-align: center; margin-bottom: 22px; }
+        .birthdate-preview-age { font-size: 30px; font-weight: 800; color: var(--text-main); }
+        .birthdate-preview-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+        .birthdate-picker-row { display: flex; gap: 10px; }
+        .birthdate-select {
+            flex: 1; min-width: 0; padding: 14px 8px; text-align: center;
+            background: var(--card-bg); border: none; border-radius: 12px;
+            font-size: 16px; font-weight: 600; color: var(--text-main);
+            outline: none; appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238E8E93'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: center bottom 10px;
+            padding-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -137,7 +165,9 @@
                 <div class="greeting-text">
                     <span class="greeting" id="greetingMsg">Good morning</span>
                     <div class="name-wrapper">
-                        <input type="text" id="petName" class="pet-name-input" value="Emma" onblur="saveSettings()" placeholder="输入名字" title="点击修改名字">
+                        <input type="text" id="petName" class="pet-name-input" value="Puppy" onblur="saveSettings()" placeholder="输入名字" title="点击修改名字">
+                        <span class="pet-age" id="petAgeDisplay" onclick="openBirthdateModal()" title="点击设置出生日期"></span>
+                        <input type="date" id="birthdateInput" style="display:none">
                     </div>
                     <div class="body-stats-wrapper" onclick="openStatsModal()" title="点击修改身体数据">
                         <span>体重: <b id="displayWeight">--</b> kg</span>
@@ -148,7 +178,7 @@
                 </div>
             </div>
         </div>
-        <input type="text" id="slogan" class="slogan-input" value="记录狗狗的每一天" maxlength="15" onblur="saveSettings()" placeholder="一句话记录" title="点击修改标语">
+        <input type="text" id="slogan" class="slogan-input" value="小狗勾的记事本" maxlength="15" onblur="saveSettings()" placeholder="一句话记录" title="点击修改标语">
     </div>
 
     <div class="filter-section" id="filterTagsContainer"></div>
@@ -244,6 +274,32 @@
         </div>
     </div>
 
+    <!-- 出生日期设置弹窗 -->
+    <div class="modal-overlay" id="birthdateModal">
+        <div class="modal-card" style="padding-bottom: 30px;">
+            <div class="modal-header">
+                <div class="modal-title">🎂 设置出生日期</div>
+                <button class="modal-close" onclick="closeModal('birthdateModal')" type="button">✕</button>
+            </div>
+
+            <div class="birthdate-preview" id="birthdatePreview">
+                <div class="birthdate-preview-age" id="birthdatePreviewAge">--</div>
+                <div class="birthdate-preview-sub">这是宝贝目前的年龄</div>
+            </div>
+
+            <div class="birthdate-picker-row">
+                <select id="birthYearSelect" class="birthdate-select" onchange="onBirthdatePartChange()"></select>
+                <select id="birthMonthSelect" class="birthdate-select" onchange="onBirthdatePartChange()"></select>
+                <select id="birthDaySelect" class="birthdate-select" onchange="onBirthdatePartChange()"></select>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:24px;">
+                <button type="button" class="btn-submit" style="flex:1; background:var(--tag-bg); color:var(--text-muted); cursor:pointer;" onclick="clearBirthdate()">清除</button>
+                <button type="button" class="btn-submit" style="flex:2; background:var(--text-main); color:#FFF; cursor:pointer;" onclick="confirmBirthdate()">保存</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 标签管理弹窗 -->
     <div class="modal-overlay" id="tagManagerModal">
         <div class="modal-card">
@@ -271,19 +327,21 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Emoji 图标</label>
-                    <input type="text" id="tagEmoji" class="form-input" required maxlength="2" placeholder="🐶">
+                    <input type="text" id="tagEmoji" class="form-input" maxlength="2" placeholder="不填默认 🐶">
                 </div>
                 <div class="form-group">
                     <label class="form-label">背景颜色</label>
                     <div class="color-picker" id="colorPicker">
                         <div class="color-swatch" style="background:#FFE8E8" data-color="#FFE8E8"></div>
                         <div class="color-swatch" style="background:#E8F4FF" data-color="#E8F4FF"></div>
-                        <div class="color-swatch" style="background:#E0F7FA" data-color="#E0F7FA"></div>
+                        <div class="color-swatch" style="background:#D9F2ED" data-color="#D9F2ED"></div>
                         <div class="color-swatch" style="background:#EAF6E3" data-color="#EAF6E3"></div>
                         <div class="color-swatch" style="background:#FFF4D4" data-color="#FFF4D4"></div>
                         <div class="color-swatch" style="background:#F3E8FF" data-color="#F3E8FF"></div>
-                        <div class="color-swatch" style="background:#F2F2F7" data-color="#F2F2F7"></div>
-                        <div class="color-swatch" style="background:#FFE0B2" data-color="#FFE0B2"></div>
+                        <div class="color-swatch" style="background:#FFE6D5" data-color="#FFE6D5"></div>
+                        <div class="color-swatch" style="background:#F0E2D0" data-color="#F0E2D0"></div>
+                        <div class="color-swatch" style="background:#FBE4F0" data-color="#FBE4F0"></div>
+                        <div class="color-swatch" style="background:#EAEAEE" data-color="#EAEAEE"></div>
                     </div>
                 </div>
                 <button type="submit" class="btn-submit" style="background:var(--text-main); color:#FFF; cursor:pointer;">保存标签</button>
@@ -333,21 +391,114 @@
         </div>
     </div>
 
+    <!-- 首次使用：添加毛孩子弹窗 -->
+    <div class="modal-overlay" id="onboardingModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">🐾 添加毛孩子</div>
+                <button class="modal-close" onclick="closeOnboardingModal()" type="button">✕</button>
+            </div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:20px; line-height:1.5;">
+                欢迎使用～以下信息都不是必填的，随时可以之后再补充，现在也可以直接关掉这个弹窗。
+            </div>
+            <form id="onboardingForm" onsubmit="handleOnboardingSubmit(event)">
+                <div class="form-group" style="display:flex; align-items:center; gap:16px;">
+                    <label class="avatar-container" title="点击选择头像" style="margin:0;">
+                        <div class="avatar" id="onboardingAvatarPreview" style="width:64px; height:64px; font-size:30px;">🐶</div>
+                        <div class="avatar-hint">📷</div>
+                        <input type="file" id="onboardingAvatarInput" accept="image/*" style="display:none" onchange="handleOnboardingAvatarUpload(event)">
+                    </label>
+                    <div style="font-size:13px; color:var(--text-muted);">点击左侧圆圈可以选一张照片当头像</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">名字</label>
+                    <input type="text" id="onboardingName" class="form-input" placeholder="给毛孩子起个名字吧">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">出生日期</label>
+                    <input type="date" id="onboardingBirthdate" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">身体数据（选填）</label>
+                    <div class="category-grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <input type="number" step="0.1" id="onboardingWeight" class="form-input" placeholder="体重(kg)">
+                        <input type="number" step="0.1" id="onboardingChest" class="form-input" placeholder="胸围(cm)">
+                        <input type="number" step="0.1" id="onboardingNeck" class="form-input" placeholder="颈围(cm)">
+                        <input type="number" step="0.1" id="onboardingLength" class="form-input" placeholder="身长(cm)">
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" style="background:var(--text-main); color:#FFF; cursor:pointer;">保存</button>
+            </form>
+        </div>
+    </div>
+
     <div class="data-tools">
         <span onclick="openSyncModal()" style="cursor:pointer; color:var(--text-main); font-weight: 600;">☁️ 家庭云同步</span> | 
         <span onclick="exportData()" style="cursor:pointer">导出备份</span> | 
         <span onclick="document.getElementById('importFileInput').click()" style="cursor:pointer">恢复备份</span>
         <input type="file" id="importFileInput" style="display:none" accept=".json" onchange="handleFileImport(event)">
     </div>
+    <div class="app-version" id="appVersionText" onclick="openChangelogModal()"></div>
+
+    <!-- 更新日志弹窗 -->
+    <div class="modal-overlay" id="changelogModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">📋 更新日志</div>
+                <button class="modal-close" onclick="closeModal('changelogModal')" type="button">✕</button>
+            </div>
+            <div class="changelog-list" id="changelogList"></div>
+        </div>
+    </div>
 
     <script>
+        // 每次改完功能，记得把这里的版本号和日期改一下
+        const APP_VERSION = 'v1.0.0';
+        const APP_UPDATED = '2026-09-06';
+
+        // 更新日志：每次发新版本，在数组最前面加一条就行（会按顺序从上到下展示）
+        const CHANGELOG = [
+            {
+                version: 'v1.1.0',
+                date: '2026-09-06',
+                notes: [
+                    '新增：数据云同步 ☁️',             
+                    '新增：宝贝年龄展示 🎂'                
+                ]
+            },
+            {
+                version: 'v1.0.0',
+                date: '2026-09-04',
+                notes: [
+                    '本网页诞生啦 🎉'                
+                ]
+            }
+        ];
+
+        function openChangelogModal() {
+            const list = document.getElementById('changelogList');
+            list.innerHTML = CHANGELOG.map(entry => `
+                <div class="changelog-item">
+                    <div class="changelog-item-header">
+                        <span class="changelog-version">${entry.version}</span>
+                        <span class="changelog-date">${entry.date}</span>
+                    </div>
+                    <ul>
+                        ${entry.notes.map(note => `<li>${note}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('');
+            document.getElementById('changelogModal').classList.add('active');
+        }
+
         const DEFAULT_CATEGORIES = [
             { id: 'c1', name: '饮食', emoji: '🍖', color: '#F3E8FF' },
             { id: 'c2', name: '出去玩', emoji: '🎾', color: '#FFF4D4' },
             { id: 'c3', name: '驱虫', emoji: '💊', color: '#EAF6E3' },
             { id: 'c4', name: '洗澡', emoji: '🛁', color: '#E8F4FF' },
             { id: 'c5', name: '医院', emoji: '🏥', color: '#FFE8E8' },
-            { id: 'c6', name: '疫苗', emoji: '💉', color: '#E0F7FA' }
+            { id: 'c6', name: '疫苗', emoji: '💉', color: '#D9F2ED' },
+            { id: 'c7', name: '便便', emoji: '💩', color: '#F0E2D0' }
         ];
 
         let records = [];
@@ -373,8 +524,9 @@
         }
 
         window.onload = async function() {
-            setGreeting();
             loadSettings();
+            setGreeting();
+            document.getElementById('appVersionText').innerText = `${APP_VERSION} · ${APP_UPDATED} 更新`;
             
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', function(e) {
@@ -393,10 +545,13 @@
             
             renderApp();
             initColorPicker();
+            renderPetAge();
 
             if (syncCode) {
                 await syncFromCloud();
             }
+
+            maybeShowOnboarding();
         };
 
         function setGreeting() {
@@ -404,31 +559,48 @@
             let greetings = [];
             if (hour >= 5 && hour < 11) {
                 greetings = [
-                    "早上好，宝贝上一次洗澡是什么时候呀？ 🛁",
+                    "早上好，白白胖胖，充满希望 😽",
                     "早安！今天也要带修狗出去玩哦 🎾",
                     "早上好，新的一天从记录开始 ☀️"
                 ];
             } else if (hour >= 11 && hour < 14) {
                 greetings = [
-                    "中午好！今天有没有按时吃午饭呀？ 🍖",
-                    "午安，狗狗今天乖不乖？ 🐶",
+                    "中午好，晒晒太阳，狗狗也需要 ☀️",
+                    "午安，和宝贝一起睡个午觉 💤",
                     "中午好，记得给狗狗加水哦 💧"
                 ];
             } else if (hour >= 14 && hour < 18) {
                 greetings = [
-                    "下午好，宝贝昨天出去玩了吗？ 🐾",
-                    "下午好，有空陪狗狗玩一会吧 🎾",
-                    "下午好，今天的零食吃了吗？ 🦴"
+                    "下午好，记录一下周末去哪里玩了吧 🐾",
+                    "下午好，我才小宝贝现在在睡觉 🥳",
+                    "下午好，摸摸狗头，万事不愁 🐶"
                 ];
             } else {
                 greetings = [
-                    "晚上好，宝贝今天吃了什么呀？ 🥩",
-                    "晚安，该给狗狗擦擦脚睡觉啦 🌙",
+                    "晚上好，有空陪狗狗玩一会球呀 🎾",
                     "晚上好，别忘了记录今天的日常哦 📖"
                 ];
             }
-            const text = greetings[Math.floor(Math.random() * greetings.length)];
+
+            // --- 每日一次的资料填写提醒，混进问候语随机池里一起抽 ---
+            const today = getTodayString();
+            const reminders = [];
+            if (!localStorage.getItem('dog_avatar') && localStorage.getItem('dog_reminder_avatar_date') !== today) {
+                reminders.push({ key: 'dog_reminder_avatar_date', text: '还没给毛孩子换头像呢，点一下头像就能上传照片 📷' });
+            }
+            if (!(localStorage.getItem('dog_name') || '').trim() && localStorage.getItem('dog_reminder_name_date') !== today) {
+                reminders.push({ key: 'dog_reminder_name_date', text: '还没给毛孩子起名字呢，点名字就能改哦 ✏️' });
+            }
+            if (bodyStats.length === 0 && localStorage.getItem('dog_reminder_stats_date') !== today) {
+                reminders.push({ key: 'dog_reminder_stats_date', text: '还没记录过身体数据呢，点体重那一行填一下吧 📏' });
+            }
+
+            const pool = greetings.concat(reminders.map(r => r.text));
+            const text = pool[Math.floor(Math.random() * pool.length)];
             document.getElementById('greetingMsg').innerText = text;
+
+            const matched = reminders.find(r => r.text === text);
+            if (matched) localStorage.setItem(matched.key, today);
         }
 
         // --- 数据加载与保存 ---
@@ -445,6 +617,9 @@
                 document.getElementById('avatarPreview').innerHTML = `<img src="${savedAvatar}" alt="avatar">`;
             }
 
+            const savedBirthdate = localStorage.getItem('dog_birthdate');
+            if (savedBirthdate) document.getElementById('birthdateInput').value = savedBirthdate;
+
             const savedCategories = localStorage.getItem('dog_categories');
             if (savedCategories) {
                 categories = JSON.parse(savedCategories);
@@ -454,9 +629,13 @@
                 });
                 if (!categories.some(c => c.name === '疫苗')) {
                     const targetIdx = categories.findIndex(c => c.name === '医院');
-                    const newCat = { id: 'c6_' + Date.now(), name: '疫苗', emoji: '💉', color: '#E0F7FA' };
+                    const newCat = { id: 'c6_' + Date.now(), name: '疫苗', emoji: '💉', color: '#D9F2ED' };
                     if (targetIdx !== -1) categories.splice(targetIdx + 1, 0, newCat);
                     else categories.push(newCat);
+                    changed = true;
+                }
+                if (!categories.some(c => c.name === '便便')) {
+                    categories.push({ id: 'c7_' + Date.now(), name: '便便', emoji: '💩', color: '#F0E2D0' });
                     changed = true;
                 }
                 if (changed) saveCategories(false);
@@ -484,6 +663,131 @@
         function saveRecords(triggerCloud = true) { localStorage.setItem('dog_records', JSON.stringify(records)); if(triggerCloud) debounceSyncToCloud(); }
         function saveBodyStats(triggerCloud = true) { localStorage.setItem('dog_body_stats', JSON.stringify(bodyStats)); if(triggerCloud) debounceSyncToCloud(); }
 
+        // --- 出生日期 / 年龄 ---
+        function saveBirthdate(triggerCloud = true) {
+            const val = document.getElementById('birthdateInput').value;
+            if (val) localStorage.setItem('dog_birthdate', val);
+            else localStorage.removeItem('dog_birthdate');
+            renderPetAge();
+            if (triggerCloud) debounceSyncToCloud();
+        }
+
+        function calcAgeText(birthdateStr) {
+            const birth = new Date(birthdateStr + 'T00:00:00');
+            const now = new Date();
+            if (isNaN(birth.getTime()) || birth > now) return '';
+
+            let years = now.getFullYear() - birth.getFullYear();
+            let months = now.getMonth() - birth.getMonth();
+            if (now.getDate() < birth.getDate()) months -= 1;
+            if (months < 0) { months += 12; years -= 1; }
+            if (years < 0) years = 0;
+
+            const totalMonths = years * 12 + months;
+            if (totalMonths < 12) {
+                return `${totalMonths}个月`;
+            }
+            if (months === 0) return `${years}岁`;
+            return `${years}岁${months}个月`;
+        }
+
+        function renderPetAge() {
+            const el = document.getElementById('petAgeDisplay');
+            const birthdateStr = localStorage.getItem('dog_birthdate');
+            if (birthdateStr) {
+                el.innerText = calcAgeText(birthdateStr);
+                el.classList.remove('unset');
+            } else {
+                el.innerText = '设置年龄';
+                el.classList.add('unset');
+            }
+        }
+
+        function daysInMonth(year, month) {
+            // month: 1-12
+            return new Date(year, month, 0).getDate();
+        }
+
+        function populateBirthdateSelects() {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const saved = localStorage.getItem('dog_birthdate');
+            let y = currentYear, m = now.getMonth() + 1, d = now.getDate();
+            if (saved) {
+                const parts = saved.split('-').map(Number);
+                y = parts[0]; m = parts[1]; d = parts[2];
+            }
+
+            const yearSelect = document.getElementById('birthYearSelect');
+            yearSelect.innerHTML = '';
+            for (let yr = currentYear; yr >= currentYear - 25; yr--) {
+                yearSelect.innerHTML += `<option value="${yr}" ${yr === y ? 'selected' : ''}>${yr}年</option>`;
+            }
+
+            const monthSelect = document.getElementById('birthMonthSelect');
+            monthSelect.innerHTML = '';
+            for (let mo = 1; mo <= 12; mo++) {
+                monthSelect.innerHTML += `<option value="${mo}" ${mo === m ? 'selected' : ''}>${mo}月</option>`;
+            }
+
+            fillDaySelect(y, m, d);
+            updateBirthdatePreview();
+        }
+
+        function fillDaySelect(year, month, selectedDay) {
+            const daySelect = document.getElementById('birthDaySelect');
+            const maxDay = daysInMonth(year, month);
+            const dayToSelect = Math.min(selectedDay || 1, maxDay);
+            let html = '';
+            for (let dy = 1; dy <= maxDay; dy++) {
+                html += `<option value="${dy}" ${dy === dayToSelect ? 'selected' : ''}>${dy}日</option>`;
+            }
+            daySelect.innerHTML = html;
+        }
+
+        function getSelectedBirthdateParts() {
+            const y = parseInt(document.getElementById('birthYearSelect').value, 10);
+            const m = parseInt(document.getElementById('birthMonthSelect').value, 10);
+            const d = parseInt(document.getElementById('birthDaySelect').value, 10);
+            return { y, m, d };
+        }
+
+        function onBirthdatePartChange() {
+            const { y, m, d } = getSelectedBirthdateParts();
+            fillDaySelect(y, m, d); // 月份/年份变化时，重新计算这个月有几天（比如二月）
+            updateBirthdatePreview();
+        }
+
+        function updateBirthdatePreview() {
+            const { y, m, d } = getSelectedBirthdateParts();
+            const mm = String(m).padStart(2, '0');
+            const dd = String(d).padStart(2, '0');
+            const dateStr = `${y}-${mm}-${dd}`;
+            const ageText = calcAgeText(dateStr);
+            document.getElementById('birthdatePreviewAge').innerText = ageText || '日期不合法';
+        }
+
+        function openBirthdateModal() {
+            populateBirthdateSelects();
+            document.getElementById('birthdateModal').classList.add('active');
+        }
+
+        function confirmBirthdate() {
+            const { y, m, d } = getSelectedBirthdateParts();
+            const mm = String(m).padStart(2, '0');
+            const dd = String(d).padStart(2, '0');
+            const dateStr = `${y}-${mm}-${dd}`;
+            document.getElementById('birthdateInput').value = dateStr;
+            saveBirthdate();
+            closeModal('birthdateModal');
+        }
+
+        function clearBirthdate() {
+            document.getElementById('birthdateInput').value = '';
+            saveBirthdate();
+            closeModal('birthdateModal');
+        }
+
         // --- 核心 Cloudflare Pages Functions 云同步逻辑 ---
         function updateSyncStatus(msg) {
             const el = document.getElementById('syncStatus');
@@ -507,9 +811,10 @@
             if (!syncCode) return;
             try {
                 const dataToSync = {
-                    name: localStorage.getItem('dog_name') || 'Emma',
-                    slogan: localStorage.getItem('dog_slogan') || '记录狗狗的每一天',
+                    name: localStorage.getItem('dog_name') || 'Puppy',
+                    slogan: localStorage.getItem('dog_slogan') || '小狗勾的记事本',
                     avatar: localStorage.getItem('dog_avatar') || '',
+                    birthdate: localStorage.getItem('dog_birthdate') || '',
                     categories: categories,
                     records: records,
                     bodyStats: bodyStats
@@ -543,6 +848,7 @@
                         if (data.name) { document.getElementById('petName').value = data.name; localStorage.setItem('dog_name', data.name); }
                         if (data.slogan) { document.getElementById('slogan').value = data.slogan; localStorage.setItem('dog_slogan', data.slogan); document.title = data.slogan;}
                         if (data.avatar) { document.getElementById('avatarPreview').innerHTML = `<img src="${data.avatar}" alt="avatar">`; localStorage.setItem('dog_avatar', data.avatar); }
+                        if (data.birthdate) { document.getElementById('birthdateInput').value = data.birthdate; localStorage.setItem('dog_birthdate', data.birthdate); }
                         
                         categories = data.categories || DEFAULT_CATEGORIES;
                         records = data.records || [];
@@ -554,6 +860,7 @@
                         
                         renderApp();
                         renderLatestBodyStats();
+                        renderPetAge();
                         updateSyncStatus('已同步最新 ☁️');
                         hideSyncStatus();
                     }
@@ -583,9 +890,10 @@
             btn.disabled = true;
 
             const dataToSync = {
-                name: localStorage.getItem('dog_name') || 'Emma',
-                slogan: localStorage.getItem('dog_slogan') || '记录狗狗的每一天',
+                name: localStorage.getItem('dog_name') || 'Puppy',
+                slogan: localStorage.getItem('dog_slogan') || '小狗勾的记事本',
                 avatar: localStorage.getItem('dog_avatar') || '',
+                birthdate: localStorage.getItem('dog_birthdate') || '',
                 categories: categories,
                 records: records,
                 bodyStats: bodyStats
@@ -641,30 +949,47 @@
             }
         }
 
-        // --- 简单中心居中裁剪成正方形头像 ---
+        // --- 简单中心居中裁剪成正方形头像（公共函数） ---
+        function cropImageToSquareBase64(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const size = Math.min(img.width, img.height);
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    const startX = (img.width - size) / 2;
+                    const startY = (img.height - size) / 2;
+                    ctx.drawImage(img, startX, startY, size, size, 0, 0, size, size);
+                    callback(canvas.toDataURL('image/png'));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         function handleAvatarUpload(event) {
             const file = event.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const size = Math.min(img.width, img.height);
-                        canvas.width = size;
-                        canvas.height = size;
-                        const ctx = canvas.getContext('2d');
-                        const startX = (img.width - size) / 2;
-                        const startY = (img.height - size) / 2;
-                        ctx.drawImage(img, startX, startY, size, size, 0, 0, size, size);
-                        const base64Img = canvas.toDataURL('image/png');
-                        document.getElementById('avatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
-                        localStorage.setItem('dog_avatar', base64Img);
-                        debounceSyncToCloud();
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+                cropImageToSquareBase64(file, function(base64Img) {
+                    document.getElementById('avatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
+                    localStorage.setItem('dog_avatar', base64Img);
+                    debounceSyncToCloud();
+                });
+            }
+            event.target.value = '';
+        }
+
+        function handleOnboardingAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                cropImageToSquareBase64(file, function(base64Img) {
+                    document.getElementById('onboardingAvatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
+                    document.getElementById('avatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
+                    localStorage.setItem('dog_avatar', base64Img);
+                });
             }
             event.target.value = '';
         }
@@ -912,7 +1237,7 @@
                 
                 const listContainer = groupDiv.querySelector('.sortable-list');
                 groups[datePart].forEach(item => {
-                    const cat = categories.find(c => c.id === item.categoryId) || { name: '未知', emoji: '📝', color: '#F2F2F7' };
+                    const cat = categories.find(c => c.id === item.categoryId) || { name: '未知', emoji: '📝', color: '#FFE6D5' };
                     let timeStr = `${month}/${day}`;
                     if(item.endTime) {
                         const ed = new Date(item.endTime);
@@ -1190,8 +1515,14 @@
             e.preventDefault();
             const id = document.getElementById('tagEditId').value;
             const name = document.getElementById('tagName').value.trim();
-            const emoji = document.getElementById('tagEmoji').value.trim();
-            
+            const emoji = document.getElementById('tagEmoji').value.trim() || '🐶';
+
+            const isDuplicate = categories.some(c => c.name === name && c.id !== id);
+            if (isDuplicate) {
+                alert(`分类"${name}"已经存在啦，换个名字试试～`);
+                return;
+            }
+
             if (id) {
                 const index = categories.findIndex(c => c.id === id);
                 if (index !== -1) categories[index] = { id, name, emoji, color: selectedTagColor };
@@ -1205,11 +1536,67 @@
 
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
+        // --- 首次使用：添加毛孩子弹窗 ---
+        function maybeShowOnboarding() {
+            if (localStorage.getItem('dog_onboarding_done')) return;
+
+            const hasExistingData = !!localStorage.getItem('dog_name')
+                || !!localStorage.getItem('dog_avatar')
+                || !!localStorage.getItem('dog_birthdate')
+                || records.length > 0
+                || bodyStats.length > 0;
+
+            if (hasExistingData) {
+                // 老用户（这个功能上线前就已经在用），不打扰，直接标记为已处理
+                localStorage.setItem('dog_onboarding_done', '1');
+                return;
+            }
+
+            document.getElementById('onboardingModal').classList.add('active');
+        }
+
+        function closeOnboardingModal() {
+            localStorage.setItem('dog_onboarding_done', '1');
+            document.getElementById('onboardingModal').classList.remove('active');
+        }
+
+        function handleOnboardingSubmit(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('onboardingName').value.trim();
+            if (name) {
+                document.getElementById('petName').value = name;
+                saveSettings(false);
+            }
+
+            const birthdate = document.getElementById('onboardingBirthdate').value;
+            if (birthdate) {
+                document.getElementById('birthdateInput').value = birthdate;
+                localStorage.setItem('dog_birthdate', birthdate);
+                renderPetAge();
+            }
+
+            const weight = document.getElementById('onboardingWeight').value;
+            const chest = document.getElementById('onboardingChest').value;
+            const neck = document.getElementById('onboardingNeck').value;
+            const length = document.getElementById('onboardingLength').value;
+            if (weight || chest || neck || length) {
+                bodyStats.push({ id: 'stat_' + Date.now(), weight, chest, neck, length, date: getTodayString() });
+                saveBodyStats(false);
+                renderLatestBodyStats();
+            }
+
+            localStorage.setItem('dog_onboarding_done', '1');
+            document.getElementById('onboardingModal').classList.remove('active');
+            debounceSyncToCloud();
+        }
+
         function exportData() {
             const data = {
                 name: localStorage.getItem('dog_name'),
                 slogan: localStorage.getItem('dog_slogan'),
                 avatar: localStorage.getItem('dog_avatar'),
+                birthdate: localStorage.getItem('dog_birthdate'),
                 categories: categories,
                 records: records,
                 bodyStats: bodyStats
@@ -1234,6 +1621,7 @@
                         if(imported.name) localStorage.setItem('dog_name', imported.name);
                         if(imported.slogan) localStorage.setItem('dog_slogan', imported.slogan);
                         if(imported.avatar) localStorage.setItem('dog_avatar', imported.avatar);
+                        if(imported.birthdate) localStorage.setItem('dog_birthdate', imported.birthdate);
                         categories = imported.categories;
                         records = imported.records;
                         bodyStats = imported.bodyStats || [];
@@ -1242,6 +1630,7 @@
                         saveBodyStats(false);
                         loadSettings();
                         renderApp();
+                        renderPetAge();
                         alert('数据导入成功！');
                         debounceSyncToCloud();
                     } else alert('数据格式不正确');
