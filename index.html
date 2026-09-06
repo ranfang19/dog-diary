@@ -149,6 +149,20 @@
             background-repeat: no-repeat; background-position: center bottom 10px;
             padding-bottom: 20px;
         }
+
+        .crop-stage {
+            position: relative; width: 100%; max-width: 320px; aspect-ratio: 1 / 1;
+            margin: 0 auto; overflow: hidden; border-radius: 20px; background: #1c1c1e;
+            touch-action: none; cursor: grab; user-select: none;
+        }
+        .crop-stage.dragging { cursor: grabbing; }
+        .crop-stage img { position: absolute; top: 0; left: 0; max-width: none; transform-origin: 0 0; pointer-events: none; }
+        .crop-circle-mask {
+            position: absolute; inset: 0; border-radius: 50%;
+            box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255,255,255,0.85);
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -296,6 +310,28 @@
             <div style="display:flex; gap:10px; margin-top:24px;">
                 <button type="button" class="btn-submit" style="flex:1; background:var(--tag-bg); color:var(--text-muted); cursor:pointer;" onclick="clearBirthdate()">清除</button>
                 <button type="button" class="btn-submit" style="flex:2; background:var(--text-main); color:#FFF; cursor:pointer;" onclick="confirmBirthdate()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 头像裁剪弹窗 -->
+    <div class="modal-overlay" id="avatarCropModal" style="z-index: 1600;">
+        <div class="modal-card" style="padding-bottom: 24px;">
+            <div class="modal-header">
+                <div class="modal-title">✂️ 裁剪头像</div>
+                <button class="modal-close" onclick="cancelAvatarCrop()" type="button">✕</button>
+            </div>
+            <div class="crop-stage" id="cropStage">
+                <img id="cropImage" draggable="false" alt="待裁剪照片">
+                <div class="crop-circle-mask"></div>
+            </div>
+            <div class="form-group" style="margin-top:20px;">
+                <label class="form-label">缩放</label>
+                <input type="range" id="cropZoomRange" min="100" max="300" value="100" oninput="onCropZoomChange()" style="width:100%;">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:6px;">
+                <button type="button" class="btn-submit" style="flex:1; background:var(--tag-bg); color:var(--text-muted); cursor:pointer;" onclick="cancelAvatarCrop()">取消</button>
+                <button type="button" class="btn-submit" style="flex:2; background:var(--text-main); color:#FFF; cursor:pointer;" onclick="confirmAvatarCrop()">确定</button>
             </div>
         </div>
     </div>
@@ -452,11 +488,8 @@
     </div>
 
     <script>
-        // 每次改完功能，记得把这里的版本号和日期改一下
-        const APP_VERSION = 'v1.0.0';
-        const APP_UPDATED = '2026-09-06';
-
         // 更新日志：每次发新版本，在数组最前面加一条就行（会按顺序从上到下展示）
+        // 页面底部的版本号会自动读取这里第一条的 version / date，不用再单独改版本号了
         const CHANGELOG = [
             {
                 version: 'v1.1.0',
@@ -501,28 +534,6 @@
             { id: 'c7', name: '便便', emoji: '💩', color: '#F0E2D0' }
         ];
 
-        // 分类迁移：不管数据是从本地、云同步、还是备份文件加载的，
-        // 都统一在这里检查有没有缺新分类 / 需不需要改名，缺就自动补上。
-        // 以后新增默认分类，在这个函数里照着样子加一段判断就行。
-        function migrateCategories() {
-            let changed = false;
-            categories.forEach(c => {
-                if (c.name === '生病') { c.name = '医院'; c.emoji = '🏥'; changed = true; }
-            });
-            if (!categories.some(c => c.name === '疫苗')) {
-                const targetIdx = categories.findIndex(c => c.name === '医院');
-                const newCat = { id: 'c6_' + Date.now(), name: '疫苗', emoji: '💉', color: '#D9F2ED' };
-                if (targetIdx !== -1) categories.splice(targetIdx + 1, 0, newCat);
-                else categories.push(newCat);
-                changed = true;
-            }
-            if (!categories.some(c => c.name === '便便')) {
-                categories.push({ id: 'c7_' + Date.now(), name: '便便', emoji: '💩', color: '#F0E2D0' });
-                changed = true;
-            }
-            return changed;
-        }
-
         let records = [];
         let categories = [];
         let bodyStats = [];
@@ -548,7 +559,7 @@
         window.onload = async function() {
             loadSettings();
             setGreeting();
-            document.getElementById('appVersionText').innerText = `${APP_VERSION} · ${APP_UPDATED} 更新`;
+            document.getElementById('appVersionText').innerText = `${CHANGELOG[0].version} · ${CHANGELOG[0].date} 更新`;
             
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', function(e) {
@@ -567,6 +578,7 @@
             
             renderApp();
             initColorPicker();
+            initCropDragEvents();
             renderPetAge();
 
             if (syncCode) {
@@ -645,7 +657,22 @@
             const savedCategories = localStorage.getItem('dog_categories');
             if (savedCategories) {
                 categories = JSON.parse(savedCategories);
-                if (migrateCategories()) saveCategories(false);
+                let changed = false;
+                categories.forEach(c => {
+                    if (c.name === '生病') { c.name = '医院'; c.emoji = '🏥'; changed = true; }
+                });
+                if (!categories.some(c => c.name === '疫苗')) {
+                    const targetIdx = categories.findIndex(c => c.name === '医院');
+                    const newCat = { id: 'c6_' + Date.now(), name: '疫苗', emoji: '💉', color: '#D9F2ED' };
+                    if (targetIdx !== -1) categories.splice(targetIdx + 1, 0, newCat);
+                    else categories.push(newCat);
+                    changed = true;
+                }
+                if (!categories.some(c => c.name === '便便')) {
+                    categories.push({ id: 'c7_' + Date.now(), name: '便便', emoji: '💩', color: '#F0E2D0' });
+                    changed = true;
+                }
+                if (changed) saveCategories(false);
             } else {
                 categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
             }
@@ -861,7 +888,6 @@
                         records = data.records || [];
                         bodyStats = data.bodyStats || [];
                         
-                        migrateCategories();
                         saveCategories(false);
                         saveRecords(false);
                         saveBodyStats(false);
@@ -957,49 +983,145 @@
             }
         }
 
-        // --- 简单中心居中裁剪成正方形头像（公共函数） ---
-        function cropImageToSquareBase64(file, callback) {
+        // --- 头像圆形裁剪（可拖动 + 缩放） ---
+        let cropTarget = null; // 'header' 或 'onboarding'，记录是哪个入口触发的裁剪
+        let cropStageSize = 0;
+        let cropNaturalW = 0, cropNaturalH = 0;
+        let cropBaseScale = 1, cropScale = 1;
+        let cropOffsetX = 0, cropOffsetY = 0;
+        let cropDragging = false;
+        let cropDragStartX = 0, cropDragStartY = 0;
+        let cropDragStartOffsetX = 0, cropDragStartOffsetY = 0;
+
+        function openAvatarCropModal(file, target) {
+            cropTarget = target;
             const reader = new FileReader();
             reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const size = Math.min(img.width, img.height);
-                    canvas.width = size;
-                    canvas.height = size;
-                    const ctx = canvas.getContext('2d');
-                    const startX = (img.width - size) / 2;
-                    const startY = (img.height - size) / 2;
-                    ctx.drawImage(img, startX, startY, size, size, 0, 0, size, size);
-                    callback(canvas.toDataURL('image/png'));
+                const imgEl = document.getElementById('cropImage');
+                imgEl.onload = function() {
+                    cropNaturalW = imgEl.naturalWidth;
+                    cropNaturalH = imgEl.naturalHeight;
+                    document.getElementById('avatarCropModal').classList.add('active');
+                    // 等弹窗展示出来、拿到真实宽度后再计算初始缩放和位置
+                    requestAnimationFrame(() => {
+                        const stage = document.getElementById('cropStage');
+                        cropStageSize = stage.clientWidth;
+                        cropBaseScale = Math.max(cropStageSize / cropNaturalW, cropStageSize / cropNaturalH);
+                        cropScale = cropBaseScale;
+                        cropOffsetX = (cropStageSize - cropNaturalW * cropScale) / 2;
+                        cropOffsetY = (cropStageSize - cropNaturalH * cropScale) / 2;
+                        document.getElementById('cropZoomRange').value = 100;
+                        applyCropTransform();
+                    });
                 };
-                img.src = e.target.result;
+                imgEl.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
 
+        function applyCropTransform() {
+            const imgEl = document.getElementById('cropImage');
+            imgEl.style.width = (cropNaturalW * cropScale) + 'px';
+            imgEl.style.height = (cropNaturalH * cropScale) + 'px';
+            imgEl.style.transform = `translate(${cropOffsetX}px, ${cropOffsetY}px)`;
+        }
+
+        function clampCropOffsets() {
+            const minX = cropStageSize - cropNaturalW * cropScale;
+            const minY = cropStageSize - cropNaturalH * cropScale;
+            cropOffsetX = Math.min(0, Math.max(minX, cropOffsetX));
+            cropOffsetY = Math.min(0, Math.max(minY, cropOffsetY));
+        }
+
+        function onCropZoomChange() {
+            const val = parseFloat(document.getElementById('cropZoomRange').value);
+            const newScale = cropBaseScale * (val / 100);
+            const center = cropStageSize / 2;
+            // 保持视野中心点不跳动：先换算成缩放前该点对应的图片坐标，再按新缩放换算回来
+            const imgPointX = (center - cropOffsetX) / cropScale;
+            const imgPointY = (center - cropOffsetY) / cropScale;
+            cropScale = newScale;
+            cropOffsetX = center - imgPointX * cropScale;
+            cropOffsetY = center - imgPointY * cropScale;
+            clampCropOffsets();
+            applyCropTransform();
+        }
+
+        function initCropDragEvents() {
+            const stage = document.getElementById('cropStage');
+            stage.addEventListener('pointerdown', function(e) {
+                cropDragging = true;
+                stage.classList.add('dragging');
+                try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+                cropDragStartX = e.clientX;
+                cropDragStartY = e.clientY;
+                cropDragStartOffsetX = cropOffsetX;
+                cropDragStartOffsetY = cropOffsetY;
+            });
+            stage.addEventListener('pointermove', function(e) {
+                if (!cropDragging) return;
+                cropOffsetX = cropDragStartOffsetX + (e.clientX - cropDragStartX);
+                cropOffsetY = cropDragStartOffsetY + (e.clientY - cropDragStartY);
+                clampCropOffsets();
+                applyCropTransform();
+            });
+            function endDrag() {
+                cropDragging = false;
+                stage.classList.remove('dragging');
+            }
+            stage.addEventListener('pointerup', endDrag);
+            stage.addEventListener('pointercancel', endDrag);
+        }
+
+        function cancelAvatarCrop() {
+            document.getElementById('avatarCropModal').classList.remove('active');
+            document.getElementById('avatarInput').value = '';
+            document.getElementById('onboardingAvatarInput').value = '';
+            cropTarget = null;
+        }
+
+        function confirmAvatarCrop() {
+            const outputSize = 400; // 导出分辨率，比屏幕上裁剪框大一些，头像更清晰
+            const ratio = outputSize / cropStageSize;
+            const canvas = document.createElement('canvas');
+            canvas.width = outputSize;
+            canvas.height = outputSize;
+            const ctx = canvas.getContext('2d');
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(outputSize / 2, outputSize / 2, outputSize / 2, 0, Math.PI * 2);
+            ctx.clip();
+            const imgEl = document.getElementById('cropImage');
+            ctx.drawImage(
+                imgEl,
+                0, 0, cropNaturalW, cropNaturalH,
+                cropOffsetX * ratio, cropOffsetY * ratio,
+                cropNaturalW * cropScale * ratio, cropNaturalH * cropScale * ratio
+            );
+            ctx.restore();
+
+            const base64Img = canvas.toDataURL('image/png');
+            document.getElementById('avatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
+            const onboardingPreview = document.getElementById('onboardingAvatarPreview');
+            if (onboardingPreview) onboardingPreview.innerHTML = `<img src="${base64Img}" alt="avatar">`;
+            localStorage.setItem('dog_avatar', base64Img);
+            if (cropTarget === 'header') debounceSyncToCloud();
+
+            document.getElementById('avatarCropModal').classList.remove('active');
+            document.getElementById('avatarInput').value = '';
+            document.getElementById('onboardingAvatarInput').value = '';
+            cropTarget = null;
+        }
+
         function handleAvatarUpload(event) {
             const file = event.target.files[0];
-            if (file) {
-                cropImageToSquareBase64(file, function(base64Img) {
-                    document.getElementById('avatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
-                    localStorage.setItem('dog_avatar', base64Img);
-                    debounceSyncToCloud();
-                });
-            }
-            event.target.value = '';
+            if (file) openAvatarCropModal(file, 'header');
         }
 
         function handleOnboardingAvatarUpload(event) {
             const file = event.target.files[0];
-            if (file) {
-                cropImageToSquareBase64(file, function(base64Img) {
-                    document.getElementById('onboardingAvatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
-                    document.getElementById('avatarPreview').innerHTML = `<img src="${base64Img}" alt="avatar">`;
-                    localStorage.setItem('dog_avatar', base64Img);
-                });
-            }
-            event.target.value = '';
+            if (file) openAvatarCropModal(file, 'onboarding');
         }
 
         // --- 身体数据逻辑 ---
@@ -1633,7 +1755,6 @@
                         categories = imported.categories;
                         records = imported.records;
                         bodyStats = imported.bodyStats || [];
-                        migrateCategories();
                         saveCategories(false);
                         saveRecords(false);
                         saveBodyStats(false);
