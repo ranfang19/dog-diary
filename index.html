@@ -586,13 +586,13 @@
             const today = getTodayString();
             const reminders = [];
             if (!localStorage.getItem('dog_avatar') && localStorage.getItem('dog_reminder_avatar_date') !== today) {
-                reminders.push({ key: 'dog_reminder_avatar_date', text: '还没给毛孩子换头像呢，点一下头像就能上传照片 📷' });
+                reminders.push({ key: 'dog_reminder_avatar_date', text: '点击头像上传宝贝照片哦 📷' });
             }
             if (!(localStorage.getItem('dog_name') || '').trim() && localStorage.getItem('dog_reminder_name_date') !== today) {
-                reminders.push({ key: 'dog_reminder_name_date', text: '还没给毛孩子起名字呢，点名字就能改哦 ✏️' });
+                reminders.push({ key: 'dog_reminder_name_date', text: '点击修改宝贝名字 ✏️' });
             }
             if (bodyStats.length === 0 && localStorage.getItem('dog_reminder_stats_date') !== today) {
-                reminders.push({ key: 'dog_reminder_stats_date', text: '还没记录过身体数据呢，点体重那一行填一下吧 📏' });
+                reminders.push({ key: 'dog_reminder_stats_date', text: '记录宝贝的身长体重啦 📏' });
             }
 
             const pool = greetings.concat(reminders.map(r => r.text));
