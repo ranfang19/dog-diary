@@ -4,5 +4,11 @@
   "assets": {
     "directory": "./",
     "not_found_handling": "single-page-application"
-  }
+  },
+  "kv_namespaces": [
+	{
+		"binding": "DOG_DIARY_KV",
+		"id": "130c2629f9bb4616a516ebb27cc1ecb5"
+	}
+	]
 }
